@@ -13,7 +13,7 @@
     "docker-start": "npm run setup && npm run start",
     "setup": "prisma generate && prisma migrate deploy",
     "postinstall": "prisma generate",
-    "lint": "eslint --cache --cache-location ./node_modules/.cache/eslint .",
+    "lint": "cross-env ESLINT_USE_FLAT_CONFIG=false eslint --cache --cache-location ./node_modules/.cache/eslint .",
     "shopify": "shopify",
     "prisma": "prisma",
     "graphql-codegen": "graphql-codegen",
