@@ -1,0 +1,18 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "68bc2649b28a88199285a4d19f8dbd"
+name = "Phoenix Rise & Flow"
+application_url = "https://ourphoenixrise.com"
+embedded = true
+
+[webhooks]
+api_version = "2026-01"
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "read_files,write_files,read_merchant_managed_fulfillment_orders,read_orders,read_products,write_products,read_shipping,read_content,write_content,read_themes,write_themes"
+optional_scopes = [ ]
+use_legacy_install_flow = false
+
+[auth]
+redirect_urls = [ "https://ourphoenixrise.com/auth/callback" ]
