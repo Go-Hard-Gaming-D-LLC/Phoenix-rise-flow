@@ -5,10 +5,23 @@ import {
   shopifyApp,
 } from "@shopify/shopify-app-remix/server";
 import { PrismaSessionStorage } from "@shopify/shopify-app-session-storage-prisma";
-import prisma from "./db.server";
+import { MemorySessionStorage } from "@shopify/shopify-app-session-storage-memory";
 
-// Determine session storage based on environment
-const sessionStorage = new PrismaSessionStorage(prisma);
+let sessionStorage: any;
+
+// Try to use Prisma if DATABASE_URL is set, otherwise use memory storage
+if (process.env.DATABASE_URL) {
+  try {
+    const prisma = require("./db.server").default;
+    sessionStorage = new PrismaSessionStorage(prisma);
+  } catch (e) {
+    console.warn("Prisma initialization failed, falling back to memory storage", e);
+    sessionStorage = new MemorySessionStorage();
+  }
+} else {
+  console.log("No DATABASE_URL set, using memory storage (sessions will reset on restart)");
+  sessionStorage = new MemorySessionStorage();
+}
 
 const shopify = shopifyApp({
   apiKey: process.env.SHOPIFY_API_KEY,
