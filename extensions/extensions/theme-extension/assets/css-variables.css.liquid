@@ -1,0 +1,90 @@
+/* assets/css-variables.css.liquid
+   Single source of truth for global CSS variables (Iron Phoenix GHG)
+   - Link this file in layout/theme.liquid and layout/password.liquid
+   - Remove assets/css-variables.css and snippets/css-variables.liquid
+*/
+
+/* -------------------------------------------------------------------------- */
+/* ROOT (driven by theme settings) */
+/* -------------------------------------------------------------------------- */
+
+:root {
+  /* Typography */
+  --font-body-family: {{ settings.type_body_font.family | escape }}, {{ settings.type_body_font.fallback_families | escape }};
+  --font-heading-family: {{ settings.type_header_font.family | escape }}, {{ settings.type_header_font.fallback_families | escape }};
+  --font-body-scale: {{ settings.body_scale | divided_by: 100.0 | default: 1 }};
+  --font-heading-scale: {{ settings.heading_scale | times: 1.0 | divided_by: settings.body_scale | default: 1 }};
+
+  /* Layout */
+  --page-width: {{ settings.page_width | divided_by: 10 }}rem;
+
+  /* Core colors (RGB triplets for flexibility) */
+  --color-black: 0,0,0;
+  --color-white: 255,255,255;
+
+  /* Brand accents (Iron Phoenix GHG) */
+  --color-neon-pink: 255,16,240;
+  --color-neon-yellow: 255,255,0;
+  --color-neon-green: 57,255,20;
+  --color-teal: 38,166,154;
+
+  /* Common hooks linked to settings */
+  --buttons-radius: {{ settings.buttons_radius | default: 0 }}px;
+  --color-text-main: rgb(var(--color-white));
+  --color-accent: rgb(var(--color-neon-green));
+}
+
+/* -------------------------------------------------------------------------- */
+/* COLOR SCHEMES (Dawn-compatible) */
+/* Produces a .color-<id> scope per scheme with computed contrast */
+/* -------------------------------------------------------------------------- */
+
+{% for scheme in settings.color_schemes %}
+{% assign background_color = scheme.settings.background %}
+{% assign brightness = background_color | color_brightness %}
+{% if brightness <= 26 %}{% assign contrast = background_color | color_lighten: 50 %}
+{% elsif brightness <= 65 %}{% assign contrast = background_color | color_lighten: 5 %}
+{% else %}{% assign contrast = background_color | color_darken: 25 %}{% endif %}
+.color-{{ scheme.id }} {
+  /* Base background as RGB tuple */
+  --color-background: {{ scheme.settings.background.red }},{{ scheme.settings.background.green }},{{ scheme.settings.background.blue }};
+
+  /* Gradient background (falls back to solid) */
+  --gradient-background: {% if scheme.settings.background_gradient != empty %}{{ scheme.settings.background_gradient }}{% else %}{{ scheme.settings.background }}{% endif %};
+
+  /* Foreground & UI tokens (RGB tuples) */
+  --color-foreground: {{ scheme.settings.text.red }},{{ scheme.settings.text.green }},{{ scheme.settings.text.blue }};
+  --color-background-contrast: {{ contrast.red }},{{ contrast.green }},{{ contrast.blue }};
+  --color-shadow: {{ scheme.settings.shadow.red }},{{ scheme.settings.shadow.green }},{{ scheme.settings.shadow.blue }};
+
+  --color-button: {{ scheme.settings.button.red }},{{ scheme.settings.button.green }},{{ scheme.settings.button.blue }};
+  --color-button-text: {{ scheme.settings.button_label.red }},{{ scheme.settings.button_label.green }},{{ scheme.settings.button_label.blue }};
+
+  --color-secondary-button: {{ scheme.settings.background.red }},{{ scheme.settings.background.green }},{{ scheme.settings.background.blue }};
+  --color-secondary-button-text: {{ scheme.settings.secondary_button_label.red }},{{ scheme.settings.secondary_button_label.green }},{{ scheme.settings.secondary_button_label.blue }};
+
+  --color-link: {{ scheme.settings.secondary_button_label.red }},{{ scheme.settings.secondary_button_label.green }},{{ scheme.settings.secondary_button_label.blue }};
+
+  --color-badge-foreground: {{ scheme.settings.text.red }},{{ scheme.settings.text.green }},{{ scheme.settings.text.blue }};
+  --color-badge-background: {{ scheme.settings.background.red }},{{ scheme.settings.background.green }},{{ scheme.settings.background.blue }};
+  --color-badge-border: {{ scheme.settings.text.red }},{{ scheme.settings.text.green }},{{ scheme.settings.text.blue }};
+
+  /* Payment terms bg — keep linters happy by referring to an RGB tuple var */
+  --payment-terms-background-color: rgb(var(--color-background));
+}
+
+/* Optional: scope base colors when body carries the scheme class */
+body.color-{{ scheme.id }} {
+  color: rgba(var(--color-foreground), 0.75);
+  background-color: rgb(var(--color-background));
+}
+{% endfor %}
+
+/* -------------------------------------------------------------------------- */
+/* GLOBAL FALLBACK (if body has no color-<id> class) */
+/* -------------------------------------------------------------------------- */
+
+body {
+  color: rgba(var(--color-foreground, 255,255,255), 0.75);
+  background-color: rgb(var(--color-background, 0,0,0));
+}
