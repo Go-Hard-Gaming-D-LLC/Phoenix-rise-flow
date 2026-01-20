@@ -13,12 +13,13 @@ import {
   List,
   Divider,
 } from "@shopify/polaris";
-import { TitleBar } from "@shopify/app-bridge-react";
+import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 
 export default function Optimizer() {
+  const shopify = useAppBridge();
   const fetcher = useFetcher<any>();
   const [productUrl, setProductUrl] = useState("");
-  
+
   const isLoading = fetcher.state === "submitting" || fetcher.state === "loading";
   const data = fetcher.data;
 
@@ -43,7 +44,7 @@ export default function Optimizer() {
               <Text variant="bodyMd" as="p">
                 Enter a product URL to grade its SEO, accessibility, and conversion potential.
               </Text>
-              
+
               <BlockStack gap="200">
                 <TextField
                   label="Product URL"
@@ -91,7 +92,7 @@ export default function Optimizer() {
               <Card>
                 <BlockStack gap="400">
                   <Text variant="headingMd" as="h2">Optimized Content</Text>
-                  
+
                   <Box padding="400" background="bg-surface-secondary" borderRadius="200">
                     <BlockStack gap="200">
                       <Text variant="headingSm" as="h3">Shopify Title (H1)</Text>

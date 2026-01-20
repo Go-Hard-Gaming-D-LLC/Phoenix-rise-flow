@@ -7,7 +7,7 @@ import {
 import { PrismaSessionStorage } from "@shopify/shopify-app-session-storage-prisma";
 import { MemorySessionStorage } from "@shopify/shopify-app-session-storage-memory";
 
-let sessionStorage: any;
+export const sessionStorage = shopify.sessionStorage;
 
 // Try to use Prisma if DATABASE_URL is set, otherwise use memory storage
 if (process.env.DATABASE_URL) {

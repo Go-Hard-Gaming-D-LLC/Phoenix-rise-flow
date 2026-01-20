@@ -146,12 +146,17 @@ export default function BulkAnalyzer() {
 
               <InlineStack gap="200">
                 <Button
-                  primary
+                  variant="primary"
                   onClick={handleAnalyze}
                   disabled={loading || !products.trim()}
                 >
                   {loading ? "Analyzing..." : "Analyze Products"}
                 </Button>
+                ...
+                <Button
+                  variant="primary"
+                  disabled={!selectedResult.ready}
+                  onClick={() => {
               </InlineStack>
 
               {loading && progress > 0 && (
