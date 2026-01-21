@@ -177,8 +177,8 @@ Product Data:
         const contentParts: any[] = [prompt];
         if (imagePart) contentParts.push(imagePart);
 
-        const result = await model.generateContent(contentParts);
-        const response = await result.response;
+        const geminiResult = await model.generateContent(contentParts);
+        const response = await geminiResult.response;
         // Fix: result.response.text() is a function call
         const analysisText = response.text();
         const analysisData = JSON.parse(analysisText);
