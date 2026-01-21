@@ -84,6 +84,7 @@ export default function BulkAnalyzer() {
                 product(id: "gid://shopify/Product/${id}") {
                   id
                   title
+                  tags
                   description
                   descriptionHtml
                   images(first: 5) {
