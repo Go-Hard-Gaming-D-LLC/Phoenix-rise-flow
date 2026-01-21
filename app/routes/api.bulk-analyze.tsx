@@ -1,85 +1,15 @@
 import type { ActionFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import { GoogleGenAI, Type } from "@google/genai";
+// Fix: Use the stable SDK consistent with gemini.server.ts
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { authenticate } from "../shopify.server";
 
 // Initialize Gemini
-const genAI = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY,
-});
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
-// Schema for product analysis response
-const productAnalysisSchema = {
-  type: Type.OBJECT,
-  properties: {
-    analysis: {
-      type: Type.OBJECT,
-      properties: {
-        productId: { type: Type.STRING, description: "Shopify product ID" },
-        currentTitle: { type: Type.STRING, description: "Current product title" },
-        suggestedTitle: { type: Type.STRING, description: "SEO-optimized title" },
-        currentDescription: { type: Type.STRING, description: "Current product description" },
-        suggestedDescription: { type: Type.STRING, description: "Improved description" },
-        metaTitle: { type: Type.STRING, description: "Meta title for search" },
-        metaDescription: { type: Type.STRING, description: "Meta description for search" },
-        altTextSuggestions: {
-          type: Type.ARRAY,
-          items: { type: Type.STRING },
-          description: "Alt text suggestions for product images",
-        },
-        keywords: {
-          type: Type.ARRAY,
-          items: { type: Type.STRING },
-          description: "SEO keywords",
-        },
-        accessibilityScore: {
-          type: Type.NUMBER,
-          description: "Accessibility score 0-100",
-        },
-        seoScore: {
-          type: Type.NUMBER,
-          description: "SEO score 0-100",
-        },
-        flaggedIssues: {
-          type: Type.ARRAY,
-          items: { type: Type.STRING },
-          description: "Issues that need manual review before applying",
-        },
-      },
-      required: [
-        "productId",
-        "currentTitle",
-        "suggestedTitle",
-        "metaDescription",
-        "accessibilityScore",
-        "seoScore",
-      ],
-    },
-  },
-};
-
-interface ProductAnalysisInput {
-  productId: string;
-  title: string;
-  description: string;
-  images: Array<{ alt?: string; src?: string }>;
-}
-
-interface AnalysisResult {
-  productId: string;
-  currentTitle: string;
-  suggestedTitle: string;
-  currentDescription: string;
-  suggestedDescription: string;
-  metaTitle: string;
-  metaDescription: string;
-  altTextSuggestions: string[];
-  keywords: string[];
-  accessibilityScore: number;
-  seoScore: number;
-  flaggedIssues: string[];
-  ready: boolean; // true if safe to auto-apply, false if needs review
-}
+// Note: Schema definition for gemini-1.5-flash with structured output
+// The @google/generative-ai SDK handles schemas slightly differently than @google/genai
+// but we will use standard JSON prompting for maximum compatibility with 1.5-flash
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   if (request.method !== "POST") {
@@ -94,6 +24,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       return json({ error: "No products provided" }, { status: 400 });
     }
 
+    // ENFORCE LIMIT: Max 10 products per bulk run
+    if (products.length > 10) {
+      return json({ error: "Bulk limit exceeded: Maximum 10 products allowed per run." }, { status: 400 });
+    }
+
     if (!process.env.GEMINI_API_KEY) {
       return json(
         { error: "GEMINI_API_KEY not configured" },
@@ -104,9 +39,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     // Using the cost-effective Gemini 1.5 Flash model
     const model = genAI.getGenerativeModel({
       model: "gemini-1.5-flash",
+      // We are relying on the prompt to enforce JSON structure for maximum compatibility 
+      // across different SDK versions.
       generationConfig: {
         responseMimeType: "application/json",
-        responseSchema: productAnalysisSchema,
       },
     });
 
