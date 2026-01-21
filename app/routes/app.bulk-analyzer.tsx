@@ -45,6 +45,7 @@ interface BulkResult {
 export default function BulkAnalyzer() {
   const fetcher = useFetcher<BulkResult>();
   const [products, setProducts] = useState<string>("");
+  const [context, setContext] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<ProductAnalysis[]>([]);
   const [selectedResult, setSelectedResult] = useState<ProductAnalysis | null>(
@@ -110,6 +111,7 @@ export default function BulkAnalyzer() {
             src: edge.node.src,
           })),
         })),
+        context: context,
         mode: "analyze",
       },
       { method: "POST", action: "/api/bulk-analyze", encType: "application/json" }
@@ -144,6 +146,16 @@ export default function BulkAnalyzer() {
                 onChange={setProducts}
                 multiline={3}
                 autoComplete="off"
+              />
+
+              <TextField
+                label="Strategy / Trend Context (Optional)"
+                placeholder="e.g. Trend: 'Cottagecore'. Goal: Increase organic traffic."
+                value={context}
+                onChange={setContext}
+                multiline={2}
+                autoComplete="off"
+                helpText="Context to guide the AI's analysis of these products."
               />
 
               <InlineStack gap="200">
