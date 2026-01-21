@@ -8,8 +8,22 @@ import { authenticate } from "../shopify.server";
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 // Note: Schema definition for gemini-1.5-flash with structured output
-// The @google/generative-ai SDK handles schemas slightly differently than @google/genai
-// but we will use standard JSON prompting for maximum compatibility with 1.5-flash
+
+interface AnalysisResult {
+  productId: string;
+  currentTitle: string;
+  suggestedTitle: string;
+  currentDescription: string;
+  suggestedDescription: string;
+  metaTitle: string;
+  metaDescription: string;
+  altTextSuggestions: string[];
+  keywords: string[];
+  accessibilityScore: number;
+  seoScore: number;
+  flaggedIssues: string[];
+  ready: boolean; // true if safe to auto-apply, false if needs review
+}
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   if (request.method !== "POST") {
