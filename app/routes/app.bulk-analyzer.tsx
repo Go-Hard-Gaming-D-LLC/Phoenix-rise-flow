@@ -43,11 +43,13 @@ interface BulkResult {
   results?: ProductAnalysis[];
   error?: string;
   scannedIds?: string[];
+  scannedResults?: any[]; // { id, title, reasons }
 }
 
 export default function BulkAnalyzer() {
   const fetcher = useFetcher<BulkResult>();
   const [products, setProducts] = useState<string>("");
+  const [scannedDetails, setScannedDetails] = useState<any[]>([]); // Detailed audit results
   const [context, setContext] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<ProductAnalysis[]>([]);
@@ -128,8 +130,11 @@ export default function BulkAnalyzer() {
     } else if (fetcher.data?.scannedIds) {
       // Handle the result of the "Scan" action
       setProducts(fetcher.data.scannedIds.join(", "));
+      if (fetcher.data.scannedResults) {
+        setScannedDetails(fetcher.data.scannedResults);
+      }
       setLoading(false);
-      shopify.toast.show(`Loaded ${fetcher.data.scannedIds.length} products`);
+      shopify.toast.show(`Loaded ${fetcher.data.scannedIds.length} priority products`);
     } else if (fetcher.data?.error) {
       setLoading(false);
       shopify.toast.show(fetcher.data.error, { isError: true });
@@ -149,6 +154,20 @@ export default function BulkAnalyzer() {
               <Text variant="headingMd" as="h2">
                 Analyze Products for Accessibility & SEO
               </Text>
+
+              {scannedDetails.length > 0 && (
+                <Banner tone="warning" title={`Audit Report: ${scannedDetails.length} Priority Items Found`}>
+                  <Box padding="200">
+                    <BlockStack gap="200">
+                      {scannedDetails.map((item: any, i) => (
+                        <Text as="p" key={i}>
+                          <strong>{item.title}</strong>: {item.reasons.join(", ")}
+                        </Text>
+                      ))}
+                    </BlockStack>
+                  </Box>
+                </Banner>
+              )}
 
               <TextField
                 label="Product IDs (comma-separated)"
