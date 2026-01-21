@@ -83,15 +83,26 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         // HEURISTIC SCORING (The "Triage" Layer)
         const scoredProducts = rawProducts.map((p: any) => {
           let urgency = 0;
+          const reasons = [];
+
           // 1. Missing Description?
-          if (!p.descriptionHtml || p.descriptionHtml.length < 50) urgency += 40;
+          if (!p.descriptionHtml || p.descriptionHtml.length < 50) {
+            urgency += 40;
+            reasons.push("Critical: Description Missing/Short");
+          }
           // 2. Missing Alt Text?
           const missingAlt = p.media?.nodes?.some((m: any) => !m.alt);
-          if (missingAlt) urgency += 30;
+          if (missingAlt) {
+            urgency += 30;
+            reasons.push("Accessibility: Missing Alt Text");
+          }
           // 3. Generic/Bad Title?
-          if (p.title.match(/copy|untitled|test/i)) urgency += 20;
+          if (p.title.match(/copy|untitled|test/i)) {
+            urgency += 20;
+            reasons.push("SEO: Generic Title");
+          }
 
-          return { id: p.id, urgency };
+          return { id: p.id, title: p.title, urgency, reasons };
         });
 
         // Sort by urgency (Highest first) and take top 15
@@ -99,6 +110,24 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         const worstOffenders = scoredProducts.slice(0, 15);
 
         const productIds = worstOffenders.map((p: any) => p.id.split("/").pop());
+
+        // Prepare detailed results for the frontend to display WHY they were picked
+        const scannedResults = worstOffenders.map((p: any) => {
+          const reasons = [];
+          if (p.urgency >= 40) reasons.push("Missing Description");
+          if (p.urgency >= 30 && p.urgency < 40) reasons.push("Missing Alt Text");
+          if (p.urgency >= 20 && p.urgency < 30) reasons.push("Generic Title");
+
+          // Ensure we catch overlaps if urgency is sum (Wait, current logic is strict if-else for urgency sum? No, need to refine)
+          // Re-evaluating reasons based on original props would be cleaner but let's stick to the heuristic. 
+          // Better: Add reasons during scoring.
+          return {
+            id: p.id.split("/").pop(),
+            title: p.title,
+            urgency: p.urgency,
+            reasons: p.reasons || []
+          };
+        });
 
         console.log(`Smart Scan complete. Filtered 50 -> Top ${productIds.length} worst offenders.`);
 
@@ -108,7 +137,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           ready: 0,
           flaggedForReview: 0,
           results: [],
-          scannedIds: productIds
+          scannedIds: productIds,
+          scannedResults // Pass full metadata
         });
       } catch (err) {
         console.error("Scan Exception:", err);
