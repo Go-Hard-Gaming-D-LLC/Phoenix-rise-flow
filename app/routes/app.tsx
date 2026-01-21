@@ -27,6 +27,7 @@ export default function App() {
         <Link to="/app/description-generator">Description Gen</Link>
         <Link to="/app/bulk-analyzer">Bulk Analysis</Link>
         <Link to="/app/phoenix">Phoenix Chat</Link>
+        <Link to="/app/onboarding">Business Vitals</Link>
       </NavMenu>
       <Outlet />
     </AppProvider>

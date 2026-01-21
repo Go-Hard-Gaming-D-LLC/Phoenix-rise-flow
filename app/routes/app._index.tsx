@@ -149,6 +149,22 @@ export default function Index() {
                 <Card>
                   <BlockStack gap="400">
                     <Text as="h3" variant="headingMd">
+                      ⚙️ Business Vitals
+                    </Text>
+                    <Text as="p">
+                      Configure your Brand Identity, Etsy Links, and Store Strategy.
+                    </Text>
+                    <Link url="/app/onboarding">
+                      <Button variant="primary" tone="critical">Configure Vitals</Button>
+                    </Link>
+                  </BlockStack>
+                </Card>
+              </div>
+
+              <div style={{ flex: 1, minWidth: "300px" }}>
+                <Card>
+                  <BlockStack gap="400">
+                    <Text as="h3" variant="headingMd">
                       🔍 Bulk Portfolio Analyzer
                     </Text>
                     <Text as="p">
