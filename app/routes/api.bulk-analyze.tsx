@@ -256,16 +256,16 @@ Product Data:
             .replace(/<[^>]+>/g, '');      // Strip others
         }
 
-        // 3. TAG TRANSLATION ENGINE (SAFE MODE)
-        // CRITICAL: Do NOT auto-slice or auto-trim tags as it breaks Shopify Collection Routing.
-        // Instead, we AUDIT them against Etsy standards.
+        // 3. TAG TRANSLATION ENGINE (OPT-IN MODE)
+        // Logic: Generate the optimized tags for Etsy, but purely as a recommendation.
+        // The user must explicitly approve them in the UI.
 
         let currentTags = product.tags || [];
         let tagArray = Array.isArray(currentTags) ? currentTags : (typeof currentTags === 'string' ? currentTags.split(',').map((t: string) => t.trim()) : []);
 
         const issues = analysisData.analysis.flaggedIssues || [];
 
-        // Audit for Etsy Compliance (Max 13 tags, Max 20 chars per tag)
+        // Audit for Etsy Compliance logic...
         if (tagArray.length > 13) {
           issues.push(`Too many tags (${tagArray.length}/13) for Etsy`);
         }
@@ -275,22 +275,35 @@ Product Data:
           issues.push(`${longTags.length} tags exceed Etsy 20-char limit`);
         }
 
-        // We preserve tags EXACTLY as is to protect Collection Routing
-        const optimizedTagsString = tagArray.join(", ");
+        // Generate the OPTIMIZED version for suggestion
+        const optimizedTags = tagArray
+          .map((tag: string) => tag.trim().substring(0, 20)) // Trim to 20 chars
+          .filter((tag: string) => tag.length > 0)           // Remove empties
+          .slice(0, 13);                                     // Keep top 13 only
+
+        const optimizedTagsString = optimizedTags.join(", ");
 
         const titleChanged = cleanTitle !== product.title;
         const descriptionChanged = plainDescription !== product.description;
-        // Tags never change in safe mode
-        const tagsChanged = false;
+        // The tags effectively "Change" if the optimized version is different
+        const originalTagsString = tagArray.join(", ");
+        const tagsChanged = optimizedTagsString !== originalTagsString;
+
+        // If tags would change, we flag it as an "Issue" so it's not auto-ready without review
+        if (tagsChanged) {
+          // We don't add to 'issues' array to block 'ready' status completely, 
+          // but we want the user to see it. 
+          // Actually, let's treat it as a suggestion.
+        }
 
         const newAlt = analysisData.analysis.altTextSuggestions && analysisData.analysis.altTextSuggestions.length > 0;
 
         const result: AnalysisResult = {
           ...analysisData.analysis,
-          flaggedIssues: issues, // Include new tag warnings
+          flaggedIssues: issues,
           suggestedTitle: cleanTitle,
           suggestedDescription: plainDescription,
-          suggestedTags: optimizedTagsString, // Return original tags (Safe)
+          suggestedTags: optimizedTagsString, // Return OPTIMIZED tags as the suggestion
           ready: !hasFlags && issues.length === 0 && (titleChanged || descriptionChanged || newAlt),
         };
 
