@@ -32,7 +32,21 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   try {
     const { admin } = await authenticate.admin(request);
-    const { products, context = "", mode = "analyze" } = await request.json();
+
+    let products, context, mode;
+    try {
+      const bodyText = await request.text();
+      // Try parsing as JSON first
+      const body = JSON.parse(bodyText);
+      products = body.products;
+      context = body.context || "";
+      mode = body.mode || "analyze";
+    } catch (e) {
+      // Fallback: If JSON parse fails, maybe it's empty or malformed, default to empty
+      console.warn("Failed to parse request body as JSON", e);
+      products = [];
+      mode = "analyze";
+    }
 
     // MODE: SCAN (Auto-Load Products)
     if (mode === "scan") {
