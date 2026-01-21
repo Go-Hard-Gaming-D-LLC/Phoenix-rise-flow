@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
+import type { LoaderFunctionArgs } from "@remix-run/node";
 import { useFetcher } from "@remix-run/react";
 import {
   Page,
@@ -79,6 +79,7 @@ export default function BulkAnalyzer() {
                   id
                   title
                   description
+                  descriptionHtml
                   images(first: 5) {
                     edges {
                       node {
@@ -111,7 +112,7 @@ export default function BulkAnalyzer() {
         })),
         mode: "analyze",
       },
-      { method: "POST", action: "/api/bulk-analyze" }
+      { method: "POST", action: "/api/bulk-analyze", encType: "application/json" }
     );
   };
 
@@ -142,6 +143,7 @@ export default function BulkAnalyzer() {
                 value={products}
                 onChange={setProducts}
                 multiline={3}
+                autoComplete="off"
               />
 
               <InlineStack gap="200">
@@ -152,17 +154,12 @@ export default function BulkAnalyzer() {
                 >
                   {loading ? "Analyzing..." : "Analyze Products"}
                 </Button>
-                ...
-                <Button
-                  variant="primary"
-                  disabled={!selectedResult.ready}
-                  onClick={() => {
               </InlineStack>
 
               {loading && progress > 0 && (
                 <Box>
                   <ProgressBar progress={progress} />
-                  <Text variant="bodySm">
+                  <Text variant="bodySm" as="p">
                     Processing {Math.round(progress * 100)}%
                   </Text>
                 </Box>
@@ -209,7 +206,7 @@ export default function BulkAnalyzer() {
                       <Badge tone="warning">Review</Badge>
                     ),
                     <Button
-                      plain
+                      variant="plain"
                       onClick={() => setSelectedResult(result)}
                     >
                       Details
@@ -230,21 +227,21 @@ export default function BulkAnalyzer() {
             <Box padding="400">
               <BlockStack gap="300">
                 <div>
-                  <Text variant="headingSm">Current Title</Text>
-                  <Text>{selectedResult.currentTitle}</Text>
+                  <Text variant="headingSm" as="h3">Current Title</Text>
+                  <Text as="p">{selectedResult.currentTitle}</Text>
                 </div>
 
                 <div>
-                  <Text variant="headingSm">Suggested Title</Text>
-                  <Text>{selectedResult.suggestedTitle}</Text>
+                  <Text variant="headingSm" as="h3">Suggested Title</Text>
+                  <Text as="p">{selectedResult.suggestedTitle}</Text>
                 </div>
 
                 {selectedResult.flaggedIssues.length > 0 && (
                   <div>
-                    <Text variant="headingSm">⚠️ Flagged Issues</Text>
+                    <Text variant="headingSm" as="h3">⚠️ Flagged Issues</Text>
                     <BlockStack gap="100">
                       {selectedResult.flaggedIssues.map((issue, i) => (
-                        <Text key={i}>• {issue}</Text>
+                        <Text key={i} as="p">• {issue}</Text>
                       ))}
                     </BlockStack>
                   </div>
@@ -252,7 +249,7 @@ export default function BulkAnalyzer() {
 
                 <InlineStack gap="200">
                   <Button
-                    primary
+                    variant="primary"
                     disabled={!selectedResult.ready}
                     onClick={() => {
                       // Apply this product's changes
@@ -261,7 +258,7 @@ export default function BulkAnalyzer() {
                           products: [selectedResult],
                           mode: "apply",
                         },
-                        { method: "POST", action: "/api/bulk-analyze" }
+                        { method: "POST", action: "/api/bulk-analyze", encType: "application/json" }
                       );
                       setSelectedResult(null);
                     }}
