@@ -7,7 +7,10 @@ import {
 } from "@remix-run/react";
 import type { LinksFunction } from "@remix-run/node";
 
+import styles from "./styles/workstation.css?url";
+
 export const links: LinksFunction = () => [
+  { rel: "stylesheet", href: styles },
   { rel: "stylesheet", href: "https://cdn.shopify.com/static/fonts/inter/v4/styles.css" },
 ];
 
