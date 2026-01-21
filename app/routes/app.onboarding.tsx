@@ -52,62 +52,79 @@ export default function Onboarding() {
     const isSaved = fetcher.data?.success;
 
     return (
-        <div style={{ background: "#0D0D0D", minHeight: "100vh", color: "white", padding: "20px" }}>
-            <Box padding="400">
-                <BlockStack gap="800">
+        <div className="mission-control-layout">
+            {/* Sidebar (Visual only for now, matching the screenshot layout) */}
+            <div className="config-sidebar">
+                <div className="sidebar-header">
+                    <span style={{ fontSize: "1.5rem" }}>✦</span>
+                    <h3>Merchant Co-Pilot</h3>
+                </div>
+                <div className="sidebar-content">
+                    <div className="action-card">
+                        <h2>Command Center</h2>
+                        <p>System Online</p>
+                    </div>
+                </div>
+            </div>
 
-                    {/* HEADER SECTION mimicking the screenshot */}
-                    <Box>
-                        <Text as="h1" variant="headingxl" fontWeight="bold">
-                            <span style={{ color: "#A68AFE" }}>✦</span> Business Vitals
-                        </Text>
-                        <Text as="p" tone="subdued">
-                            First, Define Your Brand Identity. This is essential context for the AI.
-                        </Text>
-                    </Box>
+            {/* Main Board */}
+            <div className="mission-board">
+                <header className="board-header">
+                    <div>
+                        <h1>Business Vitals</h1>
+                        <p>First, Define Your Brand Identity. This is essential context for the AI.</p>
+                    </div>
+                </header>
 
-                    <Card>
-                        <div style={{ padding: "20px" }}>
-                            <BlockStack gap="500">
-                                {/* Form mimicking the dark mode input style (using Polaris for function, custom style later) */}
+                <div className="action-panel-grid" style={{ marginTop: '20px' }}>
+                    <div className="brand-identity-setup">
+                        <h2>Identity Configuration</h2>
 
-                                <TextField
-                                    label="OFFICIAL BRAND NAME *"
+                        <div className="input-row">
+                            <label>OFFICIAL BRAND NAME *</label>
+                            <div className="icon-input-wrapper">
+                                <span>✦</span>
+                                <input
+                                    type="text"
                                     value={brandName}
-                                    onChange={setBrandName}
+                                    onChange={(e) => setBrandName(e.target.value)}
                                     placeholder="e.g. Iron Phoenix"
-                                    autoComplete="off"
                                 />
-
-                                <TextField
-                                    label="ETSY STOREFRONT URL"
-                                    value={etsyUrl}
-                                    onChange={setEtsyUrl}
-                                    placeholder="https://etsy.com/shop/..."
-                                    autoComplete="off"
-                                />
-
-                                <Button
-                                    variant="primary"
-                                    size="large"
-                                    loading={isLoading}
-                                    onClick={() => fetcher.submit({ brandName, etsyUrl }, { method: "POST" })}
-                                >
-                                    Save Identity & Initialize Engine
-                                </Button>
-                            </BlockStack>
+                            </div>
                         </div>
-                    </Card>
 
-                    {isSaved && (
-                        <Banner tone="success">
-                            <Text as="p">Identity Established. The Product Optimization Engine is ready.</Text>
-                            <Button url="/app/bulk-analyzer" variant="plain">Go to Engine</Button>
-                        </Banner>
-                    )}
+                        <div className="input-row" style={{ marginTop: '20px' }}>
+                            <label>ETSY STOREFRONT URL</label>
+                            <div className="icon-input-wrapper">
+                                <span>🔗</span>
+                                <input
+                                    type="text"
+                                    value={etsyUrl}
+                                    onChange={(e) => setEtsyUrl(e.target.value)}
+                                    placeholder="https://etsy.com/shop/..."
+                                />
+                            </div>
+                        </div>
 
-                </BlockStack>
-            </Box>
+                        <div style={{ marginTop: '30px' }}>
+                            <button
+                                className="prime-btn"
+                                disabled={isLoading}
+                                onClick={() => fetcher.submit({ brandName, etsyUrl }, { method: "POST" })}
+                            >
+                                {isLoading ? "Saving..." : "Save Identity & Initialize Engine"}
+                            </button>
+                        </div>
+
+                        {isSaved && (
+                            <div className="status-toast" style={{ marginTop: '20px', padding: '15px', borderRadius: '8px' }}>
+                                ✅ Identity Established. The Product Optimization Engine is ready.
+                                <a href="/app/bulk-analyzer" style={{ marginLeft: '10px', color: 'black', fontWeight: 'bold' }}>Go to Engine →</a>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
         </div>
     );
 }
