@@ -1,17 +1,33 @@
-# Shopify App Template - Remix
+# Phoenix Flow: Merchant Co-Pilot 🚀
 
-> [!NOTE]
-> **Remix is now React Router.** As of [React Router v7](https://remix.run/blog/merging-remix-and-react-router), Remix and React Router have merged.
-> 
-> For new projects, use the **[Shopify App Template - React Router](https://github.com/Shopify/shopify-app-template-react-router)** instead.
-> 
-> To migrate your existing Remix app, follow the **[migration guide](https://github.com/Shopify/shopify-app-template-react-router/wiki/Upgrading-from-Remix)**.
+> **Powering Shopify Merchants with Strategic AI**
 
-This is a template for building a [Shopify app](https://shopify.dev/docs/apps/getting-started) using the [Remix](https://remix.run) framework.
+This is the official codebase for **Phoenix Flow**, a high-performance Shopify App that acts as a 24/7 Merchant Co-Pilot. It integrates **Google Gemini AI (1.5 Flash)** to provide real-time SEO analysis, trend spotting, and conversion-focused content generation.
 
-Rather than cloning this repo, you can use your preferred package manager and the Shopify CLI with [these steps](https://shopify.dev/docs/apps/getting-started/create).
+## 🌟 Key Features
 
-Visit the [`shopify.dev` documentation](https://shopify.dev/docs/api/shopify-app-remix) for more details on the Remix app package.
+### 1. Phoenix Flow AI Core (`app/gemini.server.ts`)
+*   **Engine**: Powered by Google's `gemini-1.5-flash` model for speed and semantic understanding.
+*   **Context-Aware**: Understands your target audience ("Gen Z", "Luxury Buyers") and current market trends ("Demure Fall Fashion").
+*   **Secure**: Server-side API key management via `api/phoenix`.
+
+### 2. Strategic Description Generator (`/app/description-generator`)
+*   **Role**: Acts as a Semrush & RankMath Certified Expert.
+*   **Output**: Generates high-converting, SEO-optimized HTML descriptions.
+*   **Workflow**:
+    1.  Input Product Name & Features.
+    2.  Define **Strategy/Trend Context** (e.g., "Focus on sustainability").
+    3.  Analyze specific high-value keywords.
+    4.  Generate Description with H1, Meta Tags, and AIDA-structured body copy.
+
+### 3. Bulk Portfolio Review (`/app/bulk-analyze`)
+*   **Gap Analysis**: Scans batches of 10 products at a time.
+*   **Trend Spotting**: Identifies products that are missing out on current trending searches.
+*   **Optimization**: Updates listings to align with $50k+ revenue goals.
+
+---
+
+This app is built on the [Shopify Remix Template](https://shopify.dev/docs/apps/getting-started) and deployed on **Vercel** with a **PostgreSQL** database.
 
 ## Quick start
 
