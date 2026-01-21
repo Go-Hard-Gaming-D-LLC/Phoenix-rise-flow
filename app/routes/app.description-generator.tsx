@@ -17,6 +17,7 @@ export default function DescriptionGenerator() {
     const fetcher = useFetcher<{ description?: string; error?: string }>();
     const [productName, setProductName] = useState("");
     const [features, setFeatures] = useState("");
+    const [context, setContext] = useState("");
 
     const isLoading = fetcher.state === "submitting" || fetcher.state === "loading";
     const result = fetcher.data?.description;
@@ -28,6 +29,7 @@ export default function DescriptionGenerator() {
         const formData = new FormData();
         formData.append("productName", productName);
         formData.append("features", features);
+        formData.append("context", context);
 
         fetcher.submit(formData, {
             method: "POST",
@@ -65,6 +67,16 @@ export default function DescriptionGenerator() {
                                 multiline={3}
                                 autoComplete="off"
                                 helpText="List the key features you want included in the description."
+                            />
+
+                            <TextField
+                                label="Strategy / Trend Context (Optional)"
+                                value={context}
+                                onChange={setContext}
+                                placeholder="e.g. Target Audience: Gen Z. Trend: 'Demure Fall Fashion'. Goal: Urgency."
+                                multiline={2}
+                                autoComplete="off"
+                                helpText="Guide the AI on *how* to sell this product based on current trends."
                             />
 
                             <Button
