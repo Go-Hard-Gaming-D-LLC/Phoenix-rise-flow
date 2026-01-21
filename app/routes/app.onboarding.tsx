@@ -45,11 +45,41 @@ export default function Onboarding() {
     const { shop } = useLoaderData<typeof loader>();
     const fetcher = useFetcher<any>();
 
+    // State for dynamic multi-url management
     const [brandName, setBrandName] = useState("");
-    const [etsyUrl, setEtsyUrl] = useState("");
+    const [etsyUrls, setEtsyUrls] = useState<string[]>([""]);
+    const [shopifyUrls, setShopifyUrls] = useState<string[]>([""]);
 
-    const isLoading = fetcher.state === "submitting";
+    const isLoading = fetcher.state === "submitting"; // Changed from navigation.state to fetcher.state to align with fetcher.submit
     const isSaved = fetcher.data?.success;
+
+    // Handlers for dynamic fields
+    const handleUrlChange = (type: 'etsy' | 'shopify', index: number, value: string) => {
+        if (type === 'etsy') {
+            const newUrls = [...etsyUrls];
+            newUrls[index] = value;
+            setEtsyUrls(newUrls);
+        } else {
+            const newUrls = [...shopifyUrls];
+            newUrls[index] = value;
+            setShopifyUrls(newUrls);
+        }
+    };
+
+    const addUrl = (type: 'etsy' | 'shopify') => {
+        if (type === 'etsy') setEtsyUrls([...etsyUrls, ""]);
+        else setShopifyUrls([...shopifyUrls, ""]);
+    };
+
+    const removeUrl = (type: 'etsy' | 'shopify', index: number) => {
+        if (type === 'etsy') {
+            const newUrls = etsyUrls.filter((_, i) => i !== index);
+            setEtsyUrls(newUrls.length ? newUrls : [""]); // Keep at least one
+        } else {
+            const newUrls = shopifyUrls.filter((_, i) => i !== index);
+            setShopifyUrls(newUrls.length ? newUrls : [""]);
+        }
+    };
 
     return (
         <div className="mission-control-layout">
@@ -93,24 +123,69 @@ export default function Onboarding() {
                             </div>
                         </div>
 
-                        <div className="input-row" style={{ marginTop: '20px' }}>
-                            <label>ETSY STOREFRONT URL</label>
-                            <div className="icon-input-wrapper">
-                                <span>🔗</span>
-                                <input
-                                    type="text"
-                                    value={etsyUrl}
-                                    onChange={(e) => setEtsyUrl(e.target.value)}
-                                    placeholder="https://etsy.com/shop/..."
-                                />
-                            </div>
+                        {/* Dynamic Etsy URLs */}
+                        <div style={{ marginTop: '20px' }}>
+                            <div className="manual-entry-divider"><span>Etsy Storefronts</span></div>
+                            {etsyUrls.map((url, index) => (
+                                <div className="input-row with-remove" key={`etsy-${index}`} style={{ marginBottom: '10px' }}>
+                                    <div className="icon-input-wrapper">
+                                        <span>🔗</span>
+                                        <input
+                                            type="text"
+                                            value={url}
+                                            onChange={(e) => handleUrlChange('etsy', index, e.target.value)}
+                                            placeholder="https://etsy.com/shop/..."
+                                        />
+                                    </div>
+                                    {etsyUrls.length > 1 && (
+                                        <button className="remove-btn" onClick={() => removeUrl('etsy', index)}>🗑️</button>
+                                    )}
+                                </div>
+                            ))}
+                            <button className="add-url-btn" onClick={() => addUrl('etsy')}>+ Add Another Etsy Store</button>
+                        </div>
+
+                        {/* Dynamic Shopify URLs */}
+                        <div style={{ marginTop: '20px' }}>
+                            <div className="manual-entry-divider"><span>Shopify Storefronts</span></div>
+                            {shopifyUrls.map((url, index) => (
+                                <div className="input-row with-remove" key={`shopify-${index}`} style={{ marginBottom: '10px' }}>
+                                    <div className="icon-input-wrapper">
+                                        <span>🛍️</span>
+                                        <input
+                                            type="text"
+                                            value={url}
+                                            onChange={(e) => handleUrlChange('shopify', index, e.target.value)}
+                                            placeholder="https://yourstore.myshopify.com"
+                                        />
+                                    </div>
+                                    {shopifyUrls.length > 1 && (
+                                        <button className="remove-btn" onClick={() => removeUrl('shopify', index)}>🗑️</button>
+                                    )}
+                                </div>
+                            ))}
+                            <button className="add-url-btn" onClick={() => addUrl('shopify')}>+ Add Another Shopify Store</button>
                         </div>
 
                         <div style={{ marginTop: '30px' }}>
                             <button
                                 className="prime-btn"
                                 disabled={isLoading}
-                                onClick={() => fetcher.submit({ brandName, etsyUrl }, { method: "POST" })}
+                                onClick={() => {
+                                    // Submit all data
+                                    const payload = {
+                                        brandName,
+                                        etsyUrls: etsyUrls.filter(u => u.trim() !== ""),
+                                        shopifyUrls: shopifyUrls.filter(u => u.trim() !== "")
+                                    };
+                                    // Convert payload to FormData-compatible or JSON submit
+                                    // Since action expects formData usually, but we can send JSON if we adjust action or use hidden inputs.
+                                    // Easiest is to just submit JSON string via fetcher
+                                    fetcher.submit(
+                                        { jsonPayload: JSON.stringify(payload) },
+                                        { method: "POST" }
+                                    );
+                                }}
                             >
                                 {isLoading ? "Saving..." : "Save Identity & Initialize Engine"}
                             </button>
