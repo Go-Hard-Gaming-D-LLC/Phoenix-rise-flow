@@ -50,38 +50,56 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
     // MODE: SCAN (Auto-Load Products)
     if (mode === "scan") {
-      const response = await admin.graphql(
-        `#graphql
-        query GetProducts {
-          products(first: 40, sortKey: CREATED_AT, reverse: true) {
-            edges {
-              node {
-                id
+      try {
+        const response = await admin.graphql(
+          `#graphql
+          query GetProducts {
+            products(first: 15, sortKey: CREATED_AT, reverse: true) {
+              edges {
+                node {
+                  id
+                  title
+                }
               }
             }
-          }
-        }`
-      );
-      const responseJson = await response.json();
-      const productIds = responseJson.data.products.edges.map((edge: any) => edge.node.id.split("/").pop());
+          }`
+        );
+        const responseJson = await response.json();
 
-      return json({
-        success: true,
-        analyzed: 0,
-        ready: 0,
-        flaggedForReview: 0,
-        results: [],
-        scannedIds: productIds
-      });
+        if (!responseJson.data?.products?.edges) {
+          console.error("Scan Error: Invalid GraphQL response", JSON.stringify(responseJson));
+          return json({ success: false, error: "Failed to fetch products from Shopify", scannedIds: [] });
+        }
+
+        const productIds = responseJson.data.products.edges.map((edge: any) => {
+          // Robust ID extraction: Handle gid://shopify/Product/12345 or just 12345
+          const fullId = edge.node.id;
+          return fullId.split("/").pop();
+        });
+
+        console.log(`Scan successful. Found ${productIds.length} products.`);
+
+        return json({
+          success: true,
+          analyzed: 0,
+          ready: 0,
+          flaggedForReview: 0,
+          results: [],
+          scannedIds: productIds
+        });
+      } catch (err) {
+        console.error("Scan Exception:", err);
+        return json({ success: false, error: "Scan failed: " + err, scannedIds: [] });
+      }
     }
 
     if (!Array.isArray(products) || products.length === 0) {
       return json({ error: "No products provided" }, { status: 400 });
     }
 
-    // ENFORCE LIMIT: Max 40 products per bulk run (Executive Override)
-    if (products.length > 40) {
-      return json({ error: "Bulk limit exceeded: Maximum 40 products allowed per run." }, { status: 400 });
+    // ENFORCE LIMIT: Max 20 products per run (Safety Buffer)
+    if (products.length > 20) {
+      return json({ error: "Bulk limit exceeded: Maximum 20 products allowed per run." }, { status: 400 });
     }
 
     if (!process.env.GEMINI_API_KEY) {
