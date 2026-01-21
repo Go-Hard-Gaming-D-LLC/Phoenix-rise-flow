@@ -40,8 +40,9 @@ interface BulkResult {
   analyzed: number;
   ready: number;
   flaggedForReview: number;
-  results: ProductAnalysis[];
+  results?: ProductAnalysis[];
   error?: string;
+  scannedIds?: string[];
 }
 
 export default function BulkAnalyzer() {
@@ -124,6 +125,11 @@ export default function BulkAnalyzer() {
     if (fetcher.data?.results) {
       setResults(fetcher.data.results);
       setLoading(false);
+    } else if (fetcher.data?.scannedIds) {
+      // Handle the result of the "Scan" action
+      setProducts(fetcher.data.scannedIds.join(", "));
+      setLoading(false);
+      shopify.toast.show(`Loaded ${fetcher.data.scannedIds.length} products`);
     } else if (fetcher.data?.error) {
       setLoading(false);
       shopify.toast.show(fetcher.data.error, { isError: true });
@@ -151,6 +157,25 @@ export default function BulkAnalyzer() {
                 onChange={setProducts}
                 multiline={3}
                 autoComplete="off"
+                disabled={loading} // Disable if analyzing or scanning
+                connectedRight={
+                  <Button
+                    onClick={() => {
+                      // Trigger scan - we'll handle this via a separate fetcher or mode
+                      setLoading(true);
+                      const formData = new FormData();
+                      formData.append("action", "scan");
+                      // We need a way to trigger the scan. 
+                      // Using the same fetcher but with a specific mode "scan"
+                      fetcher.submit({ mode: "scan" }, { method: "POST", action: "/api/bulk-analyze" });
+                    }}
+                    variant="primary"
+                    disabled={loading}
+                    loading={loading && !products}
+                  >
+                    Scan Store (Auto-Load)
+                  </Button>
+                }
               />
 
               <TextField

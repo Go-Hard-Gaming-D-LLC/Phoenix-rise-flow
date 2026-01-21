@@ -34,6 +34,33 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const { admin } = await authenticate.admin(request);
     const { products, context = "", mode = "analyze" } = await request.json();
 
+    // MODE: SCAN (Auto-Load Products)
+    if (mode === "scan") {
+      const response = await admin.graphql(
+        `#graphql
+        query GetProducts {
+          products(first: 10, sortKey: CREATED_AT, reverse: true) {
+            edges {
+              node {
+                id
+              }
+            }
+          }
+        }`
+      );
+      const responseJson = await response.json();
+      const productIds = responseJson.data.products.edges.map((edge: any) => edge.node.id.split("/").pop());
+
+      return json({
+        success: true,
+        analyzed: 0,
+        ready: 0,
+        flaggedForReview: 0,
+        results: [],
+        scannedIds: productIds
+      });
+    }
+
     if (!Array.isArray(products) || products.length === 0) {
       return json({ error: "No products provided" }, { status: 400 });
     }
