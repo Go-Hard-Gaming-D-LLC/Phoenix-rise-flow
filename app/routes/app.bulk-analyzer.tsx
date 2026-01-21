@@ -110,21 +110,23 @@ export default function BulkAnalyzer() {
     );
 
     // Send to bulk analyzer
-    fetcher.submit(
-      {
-        products: productDetails.map((p: any) => ({
-          productId: p.data?.product?.id,
-          title: p.data?.product?.title,
-          tags: p.data?.product?.tags, // Pass tags for translation engine
-          description: p.data?.product?.description,
-          images: p.data?.product?.images?.edges?.map((edge: any) => ({
-            alt: edge.node.altText,
-            src: edge.node.src,
-          })),
+    const analysisPayload = {
+      products: productDetails.map((p: any) => ({
+        productId: p.data?.product?.id,
+        title: p.data?.product?.title,
+        tags: p.data?.product?.tags, // Pass tags for translation engine
+        description: p.data?.product?.description,
+        images: p.data?.product?.images?.edges?.map((edge: any) => ({
+          alt: edge.node.altText,
+          src: edge.node.src,
         })),
-        context: context,
-        mode: "analyze",
-      },
+      })),
+      context: context,
+      mode: "analyze",
+    };
+
+    fetcher.submit(
+      analysisPayload as any,
       { method: "POST", action: "/api/bulk-analyze", encType: "application/json" }
     );
   };
@@ -186,12 +188,8 @@ export default function BulkAnalyzer() {
                 connectedRight={
                   <Button
                     onClick={() => {
-                      // Trigger scan - we'll handle this via a separate fetcher or mode
+                      // Trigger scan 
                       setLoading(true);
-                      const formData = new FormData();
-                      formData.append("action", "scan");
-                      // We need a way to trigger the scan. 
-                      // Using the same fetcher but with a specific mode "scan" and explicit JSON encoding
                       fetcher.submit(
                         { mode: "scan" },
                         { method: "POST", action: "/api/bulk-analyze", encType: "application/json" }
@@ -358,11 +356,13 @@ export default function BulkAnalyzer() {
                         delete payload.suggestedTags;
                       }
 
+                      const payload = {
+                        products: [productPayload],
+                        mode: "apply"
+                      };
+
                       fetcher.submit(
-                        {
-                          products: [payload],
-                          mode: "apply",
-                        },
+                        payload as any,
                         { method: "POST", action: "/api/bulk-analyze", encType: "application/json" }
                       );
                       setSelectedResult(null);
