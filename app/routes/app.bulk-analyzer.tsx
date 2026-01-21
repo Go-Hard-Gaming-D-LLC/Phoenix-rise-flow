@@ -15,6 +15,7 @@ import {
   DataTable,
   Modal,
   TextField,
+  Banner,
 } from "@shopify/polaris";
 import { TitleBar } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
@@ -122,6 +123,9 @@ export default function BulkAnalyzer() {
     if (fetcher.data?.results) {
       setResults(fetcher.data.results);
       setLoading(false);
+    } else if (fetcher.data?.error) {
+      setLoading(false);
+      shopify.toast.show(fetcher.data.error, { isError: true });
     }
   }, [fetcher.data]);
 
@@ -167,6 +171,14 @@ export default function BulkAnalyzer() {
                   {loading ? "Analyzing..." : "Analyze Products"}
                 </Button>
               </InlineStack>
+
+              {fetcher.data?.error && (
+                <div style={{ marginTop: '1rem' }}>
+                  <Banner tone="critical">
+                    <p>{fetcher.data.error}</p>
+                  </Banner>
+                </div>
+              )}
 
               {loading && progress > 0 && (
                 <Box>
