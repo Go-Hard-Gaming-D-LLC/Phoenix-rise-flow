@@ -33,3 +33,19 @@ model Session {
   refreshToken        String?
   refreshTokenExpires DateTime?
 }
+
+model Configuration {
+  id              Int      @id @default(autoincrement())
+  shop            String   @unique
+  brandName       String?
+  etsyUrls        String?  // Stored as JSON string
+  shopifyUrls     String?  // Stored as JSON string
+  
+  // AI Context Helpers
+  identitySummary String?
+  targetAudience  String?
+  usp             String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
