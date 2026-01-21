@@ -53,7 +53,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       const response = await admin.graphql(
         `#graphql
         query GetProducts {
-          products(first: 10, sortKey: CREATED_AT, reverse: true) {
+          products(first: 40, sortKey: CREATED_AT, reverse: true) {
             edges {
               node {
                 id
@@ -79,9 +79,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       return json({ error: "No products provided" }, { status: 400 });
     }
 
-    // ENFORCE LIMIT: Max 10 products per bulk run
-    if (products.length > 10) {
-      return json({ error: "Bulk limit exceeded: Maximum 10 products allowed per run." }, { status: 400 });
+    // ENFORCE LIMIT: Max 40 products per bulk run (Executive Override)
+    if (products.length > 40) {
+      return json({ error: "Bulk limit exceeded: Maximum 40 products allowed per run." }, { status: 400 });
     }
 
     if (!process.env.GEMINI_API_KEY) {
