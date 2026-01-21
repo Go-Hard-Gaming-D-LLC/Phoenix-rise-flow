@@ -41,6 +41,7 @@ interface BulkResult {
   ready: number;
   flaggedForReview: number;
   results: ProductAnalysis[];
+  error?: string;
 }
 
 export default function BulkAnalyzer() {
