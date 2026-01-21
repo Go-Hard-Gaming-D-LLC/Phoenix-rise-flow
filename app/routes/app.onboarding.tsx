@@ -21,11 +21,18 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     const { admin, session } = await authenticate.admin(request);
     const shop = session.shop;
 
-    // Try to find existing branding
-    // Storing in a simple Key-Value way or just checking if we have a record
-    // For now, returning null to force input if we haven't stored it
-    // In a full implementation, we'd query the DB
-    return json({ shop });
+    const config = await db.configuration.findUnique({
+        where: { shop },
+    });
+
+    // Parse JSON strings back to arrays if they exist
+    const parsedConfig = config ? {
+        ...config,
+        etsyUrls: config.etsyUrls ? JSON.parse(config.etsyUrls) : [""],
+        shopifyUrls: config.shopifyUrls ? JSON.parse(config.shopifyUrls) : [""]
+    } : null;
+
+    return json({ shop, config: parsedConfig });
 };
 
 // ACTION: Save Business Vitals
@@ -43,27 +50,39 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         etsyUrls = payload.etsyUrls;
         shopifyUrls = payload.shopifyUrls;
     } else {
-        // Fallback for old simple form
-        brandName = formData.get("brandName");
-        etsyUrls = [formData.get("etsyUrl")];
+        // Fallback or empty
+        brandName = "";
+        etsyUrls = [];
         shopifyUrls = [];
     }
 
-    // TODO: Save to database or persistent storage
-    // For now, we are treating this as a success to enable the workflow
-    console.log("Saving Identity:", { brandName, etsyUrls, shopifyUrls });
+    // Save to database
+    await db.configuration.upsert({
+        where: { shop: session.shop },
+        update: {
+            brandName,
+            etsyUrls: JSON.stringify(etsyUrls),
+            shopifyUrls: JSON.stringify(shopifyUrls)
+        },
+        create: {
+            shop: session.shop,
+            brandName,
+            etsyUrls: JSON.stringify(etsyUrls),
+            shopifyUrls: JSON.stringify(shopifyUrls)
+        }
+    });
 
     return json({ success: true });
 };
 
 export default function Onboarding() {
-    const { shop } = useLoaderData<typeof loader>();
+    const { shop, config } = useLoaderData<typeof loader>();
     const fetcher = useFetcher<any>();
 
-    // State for dynamic multi-url management
-    const [brandName, setBrandName] = useState("");
-    const [etsyUrls, setEtsyUrls] = useState<string[]>([""]);
-    const [shopifyUrls, setShopifyUrls] = useState<string[]>([""]);
+    // State for dynamic multi-url management - Initialize from DB if available
+    const [brandName, setBrandName] = useState(config?.brandName || "");
+    const [etsyUrls, setEtsyUrls] = useState<string[]>(config?.etsyUrls || [""]);
+    const [shopifyUrls, setShopifyUrls] = useState<string[]>(config?.shopifyUrls || [""]);
 
     const isLoading = fetcher.state === "submitting"; // Changed from navigation.state to fetcher.state to align with fetcher.submit
     const isSaved = fetcher.data?.success;
