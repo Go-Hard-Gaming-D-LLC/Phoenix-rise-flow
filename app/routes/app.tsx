@@ -22,9 +22,11 @@ export default function App() {
     <AppProvider isEmbeddedApp apiKey={apiKey}>
       <NavMenu>
         <Link to="/app" rel="home">
-          Home
+          Phoenix Flow
         </Link>
-        <Link to="/app/additional">Additional page</Link>
+        <Link to="/app/description-generator">Description Gen</Link>
+        <Link to="/app/bulk-analyzer">Bulk Analysis</Link>
+        <Link to="/app/phoenix">Phoenix Chat</Link>
       </NavMenu>
       <Outlet />
     </AppProvider>
