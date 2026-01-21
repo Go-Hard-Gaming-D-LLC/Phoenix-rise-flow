@@ -166,8 +166,11 @@ export default function BulkAnalyzer() {
                       const formData = new FormData();
                       formData.append("action", "scan");
                       // We need a way to trigger the scan. 
-                      // Using the same fetcher but with a specific mode "scan"
-                      fetcher.submit({ mode: "scan" }, { method: "POST", action: "/api/bulk-analyze" });
+                      // Using the same fetcher but with a specific mode "scan" and explicit JSON encoding
+                      fetcher.submit(
+                        { mode: "scan" },
+                        { method: "POST", action: "/api/bulk-analyze", encType: "application/json" }
+                      );
                     }}
                     variant="primary"
                     disabled={loading}
