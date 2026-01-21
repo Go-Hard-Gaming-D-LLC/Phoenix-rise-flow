@@ -21,8 +21,11 @@ export async function generatePhoenixContent(prompt: string, context: string = "
         const result = await model.generateContent(fullPrompt);
         const response = await result.response;
         return response.text();
-    } catch (error) {
+    } catch (error: any) {
         console.error("Gemini API Error:", error);
+        if (error.status === 429 || error.message?.includes("429")) {
+            throw new Error("Phoenix AI usage limit reached. Please try again in a minute.");
+        }
         throw new Error("Failed to generate content from Phoenix Flow.");
     }
 }
@@ -63,8 +66,11 @@ export async function generateProductDescription(productName: string, features: 
         const result = await model.generateContent(prompt);
         const response = await result.response;
         return response.text();
-    } catch (error) {
+    } catch (error: any) {
         console.error('Gemini API Error:', error);
+        if (error.status === 429 || error.message?.includes("429")) {
+            throw new Error("Phoenix AI usage limit reached. Please try again in a minute.");
+        }
         throw new Error('Failed to generate content from Phoenix Flow.');
     }
 }
