@@ -29,6 +29,8 @@ interface ProductAnalysis {
   productId: string;
   currentTitle: string;
   suggestedTitle: string;
+  suggestedDescription: string; // Added field
+  suggestedTags?: string;       // Added field
   seoScore: number;
   accessibilityScore: number;
   flaggedIssues: string[];
