@@ -185,13 +185,31 @@ Product Data:
 
         // Determine if changes are safe to auto-apply
         const hasFlags = analysisData.analysis.flaggedIssues?.length > 0;
-        const titleChanged = analysisData.analysis.suggestedTitle !== product.title;
-        const descriptionChanged = analysisData.analysis.suggestedDescription !== product.description;
-        // Check if Alt text suggestions are new
+
+        // --- MASTER SYNC LOGIC INTEGRATION ---
+
+        // 1. DATA SANITIZATION (Title Cleaning)
+        let cleanTitle = analysisData.analysis.suggestedTitle || product.title;
+        // Remove weird symbols, keep alphanumeric, spaces, hyphens
+        cleanTitle = cleanTitle.replace(/[^\w\s-]/gi, '').substring(0, 140);
+
+        // 2. DESCRIPTION FORMATTING (Strip HTML)
+        let plainDescription = analysisData.analysis.suggestedDescription || product.description;
+        // Basic HTML stripping if it contains tags (simple regex approach for this context)
+        if (plainDescription && /<[^>]+>/g.test(plainDescription)) {
+          plainDescription = plainDescription
+            .replace(/<br\s*\/?>/gi, '\n') // Keep breaks
+            .replace(/<[^>]+>/g, '');      // Strip others
+        }
+
+        const titleChanged = cleanTitle !== product.title;
+        const descriptionChanged = plainDescription !== product.description;
         const newAlt = analysisData.analysis.altTextSuggestions && analysisData.analysis.altTextSuggestions.length > 0;
 
         const result: AnalysisResult = {
           ...analysisData.analysis,
+          suggestedTitle: cleanTitle, // Force cleaned title
+          suggestedDescription: plainDescription, // Force cleaned description
           ready: !hasFlags && (titleChanged || descriptionChanged || newAlt),
         };
 
