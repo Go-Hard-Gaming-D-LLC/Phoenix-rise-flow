@@ -7,20 +7,25 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 // Select the model (gemini-pro is standard for text, we are using 1.5-flash as requested)
 const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
-export const generatePhoenixContent = async (prompt: string) => {
+export async function generatePhoenixContent(prompt: string, context: string = "") {
     try {
-        if (!process.env.GEMINI_API_KEY) {
-            throw new Error('GEMINI_API_KEY is missing');
-        }
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-        const result = await model.generateContent(prompt);
+        const fullPrompt = `
+      Role: Shopify Store Assistant (Phoenix Flow)
+      Context: ${context}
+      Task: ${prompt}
+      Format: Return clean HTML suitable for a Shopify product description.
+    `;
+
+        const result = await model.generateContent(fullPrompt);
         const response = await result.response;
         return response.text();
     } catch (error) {
-        console.error('Phoenix Flow Error:', error);
-        throw error;
+        console.error("Gemini API Error:", error);
+        throw new Error("Failed to generate content from Phoenix Flow.");
     }
-};
+}
 
 export async function generateProductDescription(productName: string, features: string[]) {
     try {
