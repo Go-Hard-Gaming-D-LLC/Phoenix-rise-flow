@@ -91,53 +91,78 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
     // Analyze each product
     for (const product of products) {
-      const prompt = `
-Analyze this Shopify product for accessibility, SEO optimization${context ? ", and Trend Alignment" : ""}.
+      // 1. Fetch the main image if it exists
+      let imagePart = null;
+      if (product.images && product.images.length > 0 && product.images[0].src) {
+        try {
+          const imageResp = await fetch(product.images[0].src);
+          if (imageResp.ok) {
+            const arrayBuffer = await imageResp.arrayBuffer();
+            const base64Image = Buffer.from(arrayBuffer).toString("base64");
+            imagePart = {
+              inlineData: {
+                data: base64Image,
+                mimeType: "image/jpeg",
+              },
+            };
+          }
+        } catch (imgError) {
+          console.error(`Failed to fetch image for ${product.title}`, imgError);
+        }
+      }
 
-Strategy / Trend Context: ${context || "Standard SEO optimization"}
+      const prompt = `
+SYSTEM ROLE: PHOENIX FLOW VISUAL ENGINE. 
+User Context: Developer has severe cognitive/memory load issues. Do not require manual data entry.
+PRIMARY DIRECTIVE: Automate Image SEO and Accessibility via Shopify API.
+EXECUTION PROTOCOL:
+1. IMAGE VISION: Identify the subject, color, and context (e.g., "Men's blue hiking boot on a trail").
+2. ALT TEXT INJECTION: Apply a 125-character "Answer-First" alt tag.
+   Format: "[Product Name] - [Action/Context] - [Key Feature]."
+3. COMPLIANCE: Ensure the alt text matches the Triple Crown (aligns with product title and context).
 
 Product Data:
 - Title: ${product.title}
-- Description: ${product.description || "No description"}
-- Image Count: ${product.images?.length || 0}
-- Current Alt Texts: ${product.images?.map((img: any) => img.alt || "missing").join(", ") || "none"}
+- Context/Trend: ${context || "None"}
 
 Rules:
-1. NEVER change core product meaning or category
-2. Improve clarity, SEO, and accessibility
-3. If a Strategy/Trend is provided, optimize the title/description to target that niche (Gap Analysis).
-4. Flag any suggested change that alters product substance
-5. Preserve all pricing, type, and availability info
-6. Suggest alt texts for missing images
-7. Identify any factual inconsistencies or missed trend opportunities.
+1. NEVER change core product meaning.
+2. Be concise. NO LECTURES.
+3. If no image is provided, base it on the Title.
 
 Return analysis in JSON format with scores 0-100 and flagged issues list.
       `.trim();
 
       try {
-        const response = await model.generateContent(prompt);
-        const analysisText = response.response.text();
+        // Send imagePart if we successfully fetched it
+        const contentParts: any[] = [prompt];
+        if (imagePart) contentParts.push(imagePart);
+
+        const result = await model.generateContent(contentParts);
+        const response = await result.response;
+        // Fix: result.response.text() is a function call
+        const analysisText = response.text();
         const analysisData = JSON.parse(analysisText);
 
         // Determine if changes are safe to auto-apply
         const hasFlags = analysisData.analysis.flaggedIssues?.length > 0;
         const titleChanged = analysisData.analysis.suggestedTitle !== product.title;
         const descriptionChanged = analysisData.analysis.suggestedDescription !== product.description;
+        // Check if Alt text suggestions are new
+        const newAlt = analysisData.analysis.altTextSuggestions && analysisData.analysis.altTextSuggestions.length > 0;
 
         const result: AnalysisResult = {
           ...analysisData.analysis,
-          ready: !hasFlags && (titleChanged || descriptionChanged), // Ready to apply if no flags
+          ready: !hasFlags && (titleChanged || descriptionChanged || newAlt),
         };
 
         results.push(result);
       } catch (error: any) {
         if (error.status === 429 || error.message?.includes("429") || error.message?.includes("Quota exceeded")) {
           console.error("Gemini Rate Limit Hit:", error);
-          // Stop processing and return what we have, or error out
           throw new Error("Phoenix AI usage limit reached. Please try again in a moment.");
         }
         console.error(`Error analyzing product ${product.title}:`, error);
-        // Push a placeholder failure result or continue? For now, continue loop.
       }
     }
 
