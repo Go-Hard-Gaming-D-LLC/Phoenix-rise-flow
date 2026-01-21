@@ -88,7 +88,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   try {
     const { admin } = await authenticate.admin(request);
-    const { products, mode = "analyze" } = await request.json();
+    const { products, context = "", mode = "analyze" } = await request.json();
 
     if (!Array.isArray(products) || products.length === 0) {
       return json({ error: "No products provided" }, { status: 400 });
@@ -101,8 +101,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       );
     }
 
+    // Using the cost-effective Gemini 1.5 Flash model
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash",
+      model: "gemini-1.5-flash",
       generationConfig: {
         responseMimeType: "application/json",
         responseSchema: productAnalysisSchema,
@@ -114,7 +115,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     // Analyze each product
     for (const product of products) {
       const prompt = `
-Analyze this Shopify product for accessibility and SEO optimization.
+Analyze this Shopify product for accessibility, SEO optimization${context ? ", and Trend Alignment" : ""}.
+
+Strategy / Trend Context: ${context || "Standard SEO optimization"}
 
 Product Data:
 - Title: ${product.title}
@@ -124,30 +127,41 @@ Product Data:
 
 Rules:
 1. NEVER change core product meaning or category
-2. ONLY improve clarity, SEO, and accessibility
-3. Flag any suggested change that alters product substance
-4. Preserve all pricing, type, and availability info
-5. Suggest alt texts for missing images
-6. Identify any factual inconsistencies
+2. Improve clarity, SEO, and accessibility
+3. If a Strategy/Trend is provided, optimize the title/description to target that niche (Gap Analysis).
+4. Flag any suggested change that alters product substance
+5. Preserve all pricing, type, and availability info
+6. Suggest alt texts for missing images
+7. Identify any factual inconsistencies or missed trend opportunities.
 
 Return analysis in JSON format with scores 0-100 and flagged issues list.
       `.trim();
 
-      const response = await model.generateContent(prompt);
-      const analysisText = response.response.text();
-      const analysisData = JSON.parse(analysisText);
+      try {
+        const response = await model.generateContent(prompt);
+        const analysisText = response.response.text();
+        const analysisData = JSON.parse(analysisText);
 
-      // Determine if changes are safe to auto-apply
-      const hasFlags = analysisData.analysis.flaggedIssues?.length > 0;
-      const titleChanged = analysisData.analysis.suggestedTitle !== product.title;
-      const descriptionChanged = analysisData.analysis.suggestedDescription !== product.description;
+        // Determine if changes are safe to auto-apply
+        const hasFlags = analysisData.analysis.flaggedIssues?.length > 0;
+        const titleChanged = analysisData.analysis.suggestedTitle !== product.title;
+        const descriptionChanged = analysisData.analysis.suggestedDescription !== product.description;
 
-      const result: AnalysisResult = {
-        ...analysisData.analysis,
-        ready: !hasFlags && (titleChanged || descriptionChanged), // Ready to apply if no flags
-      };
+        const result: AnalysisResult = {
+          ...analysisData.analysis,
+          ready: !hasFlags && (titleChanged || descriptionChanged), // Ready to apply if no flags
+        };
 
-      results.push(result);
+        results.push(result);
+      } catch (error: any) {
+        if (error.status === 429 || error.message?.includes("429") || error.message?.includes("Quota exceeded")) {
+          console.error("Gemini Rate Limit Hit:", error);
+          // Stop processing and return what we have, or error out
+          throw new Error("Phoenix AI usage limit reached. Please try again in a moment.");
+        }
+        console.error(`Error analyzing product ${product.title}:`, error);
+        // Push a placeholder failure result or continue? For now, continue loop.
+      }
     }
 
     // If mode is "apply" and all are ready, apply changes
