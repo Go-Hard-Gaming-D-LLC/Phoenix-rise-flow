@@ -112,25 +112,32 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       }
 
       const prompt = `
-SYSTEM ROLE: PHOENIX FLOW VISUAL ENGINE. 
-User Context: Developer has severe cognitive/memory load issues. Do not require manual data entry.
-PRIMARY DIRECTIVE: Automate Image SEO and Accessibility via Shopify API.
-EXECUTION PROTOCOL:
-1. IMAGE VISION: Identify the subject, color, and context (e.g., "Men's blue hiking boot on a trail").
-2. ALT TEXT INJECTION: Apply a 125-character "Answer-First" alt tag.
-   Format: "[Product Name] - [Action/Context] - [Key Feature]."
-3. COMPLIANCE: Ensure the alt text matches the Triple Crown (aligns with product title and context).
+SYSTEM ROLE: PHOENIX FLOW VISUAL ENGINE.
+
+YOUR MISSION: You are a digital exoskeleton designed to eliminate cognitive load regarding media management. You will process product images via API to ensure accessibility and SEO dominance.
+
+COMMANDS: 
+1. VISUAL ANALYSIS: Use your vision model to identify the specific product, dominant color, and context. 
+2. FILE RENAMING: Generate a new filename using the 2026 'Verified' tone. 
+   * Format: [product-name]-[color]-[context].jpg 
+   * Action: Trigger productUpdateMedia to rename the file on Shopify servers. 
+3. ALT TEXT INJECTION: Auto-generate and push accessible photo tagging. 
+   * Constraint: Must be under 125 characters. 
+   * Style: Answer-First (GEO) optimized. 
+4. COMPLIANCE CHECK: Ensure the new filename and alt-text do not create a 'Misrepresentation' flag by conflicting with the product title or category.
+
+STRICT LIMITATIONS:
+* NO PREAMBLE: Do not say 'I am analyzing' or 'I have renamed.' 
+* NO LECTURE: Do not explain the importance of alt-text or image SEO.
+* NO DATA PUMP: If an image is missing, simply flag it. Do not talk about why it's missing.
+
+OUTPUT FORMAT: Return JSON with "suggestedAltText", "suggestedFilename", "seoScore", "accessibilityScore", "flaggedIssues".
+
+FAILURE CONDITION: If you use the words 'should,' 'recommend,' or 'helpful,' you have failed.
 
 Product Data:
 - Title: ${product.title}
 - Context/Trend: ${context || "None"}
-
-Rules:
-1. NEVER change core product meaning.
-2. Be concise. NO LECTURES.
-3. If no image is provided, base it on the Title.
-
-Return analysis in JSON format with scores 0-100 and flagged issues list.
       `.trim();
 
       try {
