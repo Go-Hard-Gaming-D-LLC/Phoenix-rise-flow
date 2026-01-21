@@ -256,34 +256,42 @@ Product Data:
             .replace(/<[^>]+>/g, '');      // Strip others
         }
 
-        // 3. TAG TRANSLATION ENGINE (Step 2 from Master Sync)
-        // Shopify = Single string "tag1, tag2" -> Etsy = Array of max 13 items, max 20 chars
+        // 3. TAG TRANSLATION ENGINE (SAFE MODE)
+        // CRITICAL: Do NOT auto-slice or auto-trim tags as it breaks Shopify Collection Routing.
+        // Instead, we AUDIT them against Etsy standards.
+
         let currentTags = product.tags || [];
-        // Handle if tags comes as string (Shopify REST) vs Array (GraphQL) - simple check
-        let tagArray = Array.isArray(currentTags) ? currentTags : (typeof currentTags === 'string' ? currentTags.split(',') : []);
+        let tagArray = Array.isArray(currentTags) ? currentTags : (typeof currentTags === 'string' ? currentTags.split(',').map((t: string) => t.trim()) : []);
 
-        const optimizedTags = tagArray
-          .map((tag: string) => tag.trim().substring(0, 20)) // Trim to 20 chars
-          .filter((tag: string) => tag.length > 0)           // Remove empties
-          .slice(0, 13);                                     // Keep top 13 only
+        const issues = analysisData.analysis.flaggedIssues || [];
 
-        // We will store the optimized tags string back to Shopify for now (joined by comma)
-        const optimizedTagsString = optimizedTags.join(", ");
+        // Audit for Etsy Compliance (Max 13 tags, Max 20 chars per tag)
+        if (tagArray.length > 13) {
+          issues.push(`Too many tags (${tagArray.length}/13) for Etsy`);
+        }
+
+        const longTags = tagArray.filter((t: string) => t.length > 20);
+        if (longTags.length > 0) {
+          issues.push(`${longTags.length} tags exceed Etsy 20-char limit`);
+        }
+
+        // We preserve tags EXACTLY as is to protect Collection Routing
+        const optimizedTagsString = tagArray.join(", ");
 
         const titleChanged = cleanTitle !== product.title;
         const descriptionChanged = plainDescription !== product.description;
-        // Check if tags changed
-        const originalTagsString = Array.isArray(product.tags) ? product.tags.join(", ") : (product.tags || "");
-        const tagsChanged = optimizedTagsString !== originalTagsString;
+        // Tags never change in safe mode
+        const tagsChanged = false;
 
         const newAlt = analysisData.analysis.altTextSuggestions && analysisData.analysis.altTextSuggestions.length > 0;
 
         const result: AnalysisResult = {
           ...analysisData.analysis,
+          flaggedIssues: issues, // Include new tag warnings
           suggestedTitle: cleanTitle,
           suggestedDescription: plainDescription,
-          suggestedTags: optimizedTagsString, // Return optimized tags
-          ready: !hasFlags && (titleChanged || descriptionChanged || newAlt || tagsChanged),
+          suggestedTags: optimizedTagsString, // Return original tags (Safe)
+          ready: !hasFlags && issues.length === 0 && (titleChanged || descriptionChanged || newAlt),
         };
 
         results.push(result);
