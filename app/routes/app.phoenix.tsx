@@ -1,18 +1,26 @@
-import { useState } from 'react';
-import { Form, useNavigation, useActionData, useSubmit } from '@remix-run/react';
-import { Page, Layout, Card, Text, TextField, Button, BlockStack } from '@shopify/polaris';
+import { useState, useEffect } from 'react';
+import type { LoaderFunctionArgs } from "@remix-run/node";
+import { useFetcher } from '@remix-run/react';
+import { Page, Layout, Card, Text, TextField, Button, BlockStack, Banner, Box } from '@shopify/polaris';
+import { authenticate } from "../shopify.server";
+
+export const loader = async ({ request }: LoaderFunctionArgs) => {
+    await authenticate.admin(request);
+    return null;
+};
 
 export default function PhoenixFlow() {
     const [prompt, setPrompt] = useState('');
-    const nav = useNavigation();
-    const actionData = useActionData<{ content?: string; error?: string }>();
-    const submit = useSubmit();
+    const fetcher = useFetcher<{ content?: string; error?: string }>();
 
-    const isLoading = nav.state === 'submitting';
+    const isLoading = fetcher.state === 'submitting' || fetcher.state === 'loading';
 
     const handleGenerate = () => {
-        // Submit data to the resource route we created
-        submit({ prompt }, { method: 'POST', action: '/api/phoenix', encType: 'application/json' });
+        // Use fetcher for cleaner SPA-like interaction
+        fetcher.submit(
+            { prompt },
+            { method: 'POST', action: '/api/phoenix', encType: 'application/json' }
+        );
     };
 
     return (
@@ -30,16 +38,23 @@ export default function PhoenixFlow() {
                                 autoComplete="off"
                                 disabled={isLoading}
                             />
+
                             <Button onClick={handleGenerate} loading={isLoading} variant="primary">
                                 Generate with Gemini
                             </Button>
 
-                            {actionData?.content && (
+                            {fetcher.data?.error && (
+                                <Banner tone="critical">
+                                    <p>{fetcher.data.error}</p>
+                                </Banner>
+                            )}
+
+                            {fetcher.data?.content && (
                                 <BlockStack gap="200">
                                     <Text as="h3" variant="headingSm">Result:</Text>
-                                    <div style={{ padding: '10px', background: '#f4f4f4', borderRadius: '4px' }}>
-                                        <Text as="p">{actionData.content}</Text>
-                                    </div>
+                                    <Box padding="400" background="bg-surface-secondary" borderRadius="200">
+                                        <Text as="p">{fetcher.data.content}</Text>
+                                    </Box>
                                 </BlockStack>
                             )}
                         </BlockStack>
