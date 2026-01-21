@@ -16,6 +16,7 @@ import {
   Modal,
   TextField,
   Banner,
+  Checkbox,
 } from "@shopify/polaris";
 import { TitleBar } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
@@ -58,6 +59,7 @@ export default function BulkAnalyzer() {
   const [selectedResult, setSelectedResult] = useState<ProductAnalysis | null>(
     null
   );
+  const [applyTags, setApplyTags] = useState(false); // Default false for safety
   const [progress, setProgress] = useState(0);
 
   const handleAnalyze = async () => {
@@ -322,6 +324,15 @@ export default function BulkAnalyzer() {
                 <div>
                   <Text variant="headingSm" as="h3">Tags Audit</Text>
                   <Text as="p" tone="subdued">{selectedResult.suggestedTags || "No tags found"}</Text>
+                  {selectedResult.suggestedTags && (
+                    <div style={{ marginTop: '10px' }}>
+                      <Checkbox
+                        label="Apply Optimized Tags (Warning: May affect collections)"
+                        checked={applyTags}
+                        onChange={setApplyTags}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {selectedResult.flaggedIssues.length > 0 && (
@@ -341,9 +352,15 @@ export default function BulkAnalyzer() {
                     disabled={!selectedResult.ready}
                     onClick={() => {
                       // Apply this product's changes
+                      // If user unchecked tags, remove them from payload
+                      const payload = { ...selectedResult };
+                      if (!applyTags) {
+                        delete payload.suggestedTags;
+                      }
+
                       fetcher.submit(
                         {
-                          products: [selectedResult],
+                          products: [payload],
                           mode: "apply",
                         },
                         { method: "POST", action: "/api/bulk-analyze", encType: "application/json" }
