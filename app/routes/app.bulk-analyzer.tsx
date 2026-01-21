@@ -310,6 +310,18 @@ export default function BulkAnalyzer() {
                   <Text as="p">{selectedResult.suggestedTitle}</Text>
                 </div>
 
+                <div>
+                  <Text variant="headingSm" as="h3">Suggested Description</Text>
+                  <Box padding="200" background="bg-surface-secondary" borderRadius="200">
+                    <Text as="p" truncate>{selectedResult.suggestedDescription}</Text>
+                  </Box>
+                </div>
+
+                <div>
+                  <Text variant="headingSm" as="h3">Tags Audit</Text>
+                  <Text as="p" tone="subdued">{selectedResult.suggestedTags || "No tags found"}</Text>
+                </div>
+
                 {selectedResult.flaggedIssues.length > 0 && (
                   <div>
                     <Text variant="headingSm" as="h3">⚠️ Flagged Issues</Text>
