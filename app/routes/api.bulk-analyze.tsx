@@ -15,6 +15,7 @@ interface AnalysisResult {
   suggestedTitle: string;
   currentDescription: string;
   suggestedDescription: string;
+  suggestedTags?: string; // New field for optimized tags
   metaTitle: string;
   metaDescription: string;
   altTextSuggestions: string[];
@@ -257,22 +258,32 @@ Product Data:
 
         // 3. TAG TRANSLATION ENGINE (Step 2 from Master Sync)
         // Shopify = Single string "tag1, tag2" -> Etsy = Array of max 13 items, max 20 chars
-        // We will store the optimized tags string back to Shopify for now
-        let currentTags = product.tags || ""; // Assuming we fetched tags, if not we need to enable it in query
-        let optimizedTags = currentTags;
+        let currentTags = product.tags || [];
+        // Handle if tags comes as string (Shopify REST) vs Array (GraphQL) - simple check
+        let tagArray = Array.isArray(currentTags) ? currentTags : (typeof currentTags === 'string' ? currentTags.split(',') : []);
 
-        // Note: We need to ensure specific 'tags' field is fetched in GraphQL query first.
-        // For now, assuming standard behavior, but if tags are missing, we skip this.
+        const optimizedTags = tagArray
+          .map((tag: string) => tag.trim().substring(0, 20)) // Trim to 20 chars
+          .filter((tag: string) => tag.length > 0)           // Remove empties
+          .slice(0, 13);                                     // Keep top 13 only
+
+        // We will store the optimized tags string back to Shopify for now (joined by comma)
+        const optimizedTagsString = optimizedTags.join(", ");
 
         const titleChanged = cleanTitle !== product.title;
         const descriptionChanged = plainDescription !== product.description;
+        // Check if tags changed
+        const originalTagsString = Array.isArray(product.tags) ? product.tags.join(", ") : (product.tags || "");
+        const tagsChanged = optimizedTagsString !== originalTagsString;
+
         const newAlt = analysisData.analysis.altTextSuggestions && analysisData.analysis.altTextSuggestions.length > 0;
 
         const result: AnalysisResult = {
           ...analysisData.analysis,
-          suggestedTitle: cleanTitle, // Force cleaned title
-          suggestedDescription: plainDescription, // Force cleaned description
-          ready: !hasFlags && (titleChanged || descriptionChanged || newAlt),
+          suggestedTitle: cleanTitle,
+          suggestedDescription: plainDescription,
+          suggestedTags: optimizedTagsString, // Return optimized tags
+          ready: !hasFlags && (titleChanged || descriptionChanged || newAlt || tagsChanged),
         };
 
         results.push(result);

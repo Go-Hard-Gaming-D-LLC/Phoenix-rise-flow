@@ -111,6 +111,7 @@ export default function BulkAnalyzer() {
         products: productDetails.map((p: any) => ({
           productId: p.data?.product?.id,
           title: p.data?.product?.title,
+          tags: p.data?.product?.tags, // Pass tags for translation engine
           description: p.data?.product?.description,
           images: p.data?.product?.images?.edges?.map((edge: any) => ({
             alt: edge.node.altText,
