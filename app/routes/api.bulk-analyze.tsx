@@ -338,6 +338,7 @@ Product Data:
                 input: {
                   id: result.productId,
                   title: result.suggestedTitle,
+                  tags: result.suggestedTags ? result.suggestedTags.split(",").map((t: string) => t.trim()) : undefined, // Update tags if present
                   metafields: [
                     {
                       namespace: "custom",
