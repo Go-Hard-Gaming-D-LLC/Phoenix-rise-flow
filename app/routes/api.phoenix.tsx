@@ -7,20 +7,33 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     // 1. Authenticate the Shopify User
     const { admin } = await authenticate.admin(request);
 
-    // 2. Parse the incoming JSON payload
-    const { prompt } = await request.json();
+    let prompt = "";
+    let context = "Shopify Product Editor";
+
+    const contentType = request.headers.get("Content-Type");
+
+    if (contentType?.includes("application/json")) {
+        const data = await request.json();
+        prompt = data.prompt;
+        if (data.context) context = data.context;
+    } else {
+        const formData = await request.formData();
+        prompt = formData.get("prompt") as string;
+        const contextVal = formData.get("context") as string;
+        if (contextVal) context = contextVal;
+    }
 
     if (!prompt) {
-        return json({ error: 'Prompt is required' }, { status: 400 });
+        return json({ error: "Prompt is required" }, { status: 400 });
     }
 
     try {
-        // 3. Call the Phoenix/Gemini Logic
-        const aiResponse = await generatePhoenixContent(prompt);
+        // 3. Call the Gemini Utility
+        const aiResponse = await generatePhoenixContent(prompt, context);
 
         // 4. Return the result to the frontend
-        return json({ content: aiResponse });
+        return json({ success: true, content: aiResponse });
     } catch (error) {
-        return json({ error: 'Failed to generate content' }, { status: 500 });
+        return json({ success: false, error: "AI Generation Failed" }, { status: 500 });
     }
 };
