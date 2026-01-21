@@ -255,6 +255,15 @@ Product Data:
             .replace(/<[^>]+>/g, '');      // Strip others
         }
 
+        // 3. TAG TRANSLATION ENGINE (Step 2 from Master Sync)
+        // Shopify = Single string "tag1, tag2" -> Etsy = Array of max 13 items, max 20 chars
+        // We will store the optimized tags string back to Shopify for now
+        let currentTags = product.tags || ""; // Assuming we fetched tags, if not we need to enable it in query
+        let optimizedTags = currentTags;
+
+        // Note: We need to ensure specific 'tags' field is fetched in GraphQL query first.
+        // For now, assuming standard behavior, but if tags are missing, we skip this.
+
         const titleChanged = cleanTitle !== product.title;
         const descriptionChanged = plainDescription !== product.description;
         const newAlt = analysisData.analysis.altTextSuggestions && analysisData.analysis.altTextSuggestions.length > 0;
