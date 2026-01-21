@@ -51,14 +51,21 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     // MODE: SCAN (Auto-Load Products)
     if (mode === "scan") {
       try {
+        // SMART SCAN: Fetch 50, triage locally, return top 15 worst offenders
         const response = await admin.graphql(
           `#graphql
           query GetProducts {
-            products(first: 15, sortKey: CREATED_AT, reverse: true) {
+            products(first: 50, sortKey: UPDATED_AT, reverse: true) {
               edges {
                 node {
                   id
                   title
+                  descriptionHtml
+                  media(first: 5) {
+                    nodes {
+                      alt
+                    }
+                  }
                 }
               }
             }
@@ -71,13 +78,29 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           return json({ success: false, error: "Failed to fetch products from Shopify", scannedIds: [] });
         }
 
-        const productIds = responseJson.data.products.edges.map((edge: any) => {
-          // Robust ID extraction: Handle gid://shopify/Product/12345 or just 12345
-          const fullId = edge.node.id;
-          return fullId.split("/").pop();
+        const rawProducts = responseJson.data.products.edges.map((edge: any) => edge.node);
+
+        // HEURISTIC SCORING (The "Triage" Layer)
+        const scoredProducts = rawProducts.map((p: any) => {
+          let urgency = 0;
+          // 1. Missing Description?
+          if (!p.descriptionHtml || p.descriptionHtml.length < 50) urgency += 40;
+          // 2. Missing Alt Text?
+          const missingAlt = p.media?.nodes?.some((m: any) => !m.alt);
+          if (missingAlt) urgency += 30;
+          // 3. Generic/Bad Title?
+          if (p.title.match(/copy|untitled|test/i)) urgency += 20;
+
+          return { id: p.id, urgency };
         });
 
-        console.log(`Scan successful. Found ${productIds.length} products.`);
+        // Sort by urgency (Highest first) and take top 15
+        scoredProducts.sort((a: any, b: any) => b.urgency - a.urgency);
+        const worstOffenders = scoredProducts.slice(0, 15);
+
+        const productIds = worstOffenders.map((p: any) => p.id.split("/").pop());
+
+        console.log(`Smart Scan complete. Filtered 50 -> Top ${productIds.length} worst offenders.`);
 
         return json({
           success: true,
