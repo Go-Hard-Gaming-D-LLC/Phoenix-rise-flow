@@ -31,14 +31,29 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 // ACTION: Save Business Vitals
 export const action = async ({ request }: ActionFunctionArgs) => {
     const { session } = await authenticate.admin(request);
+    // Parse JSON payload from frontend
     const formData = await request.formData();
+    const jsonString = formData.get("jsonPayload") as string;
 
-    const brandName = formData.get("brandName");
-    const etsyUrl = formData.get("etsyUrl");
+    let brandName, etsyUrls, shopifyUrls;
 
-    // Here we would save to Prisma DB
-    // For now, we simulate success
-    return json({ success: true, brandName });
+    if (jsonString) {
+        const payload = JSON.parse(jsonString);
+        brandName = payload.brandName;
+        etsyUrls = payload.etsyUrls;
+        shopifyUrls = payload.shopifyUrls;
+    } else {
+        // Fallback for old simple form
+        brandName = formData.get("brandName");
+        etsyUrls = [formData.get("etsyUrl")];
+        shopifyUrls = [];
+    }
+
+    // TODO: Save to database or persistent storage
+    // For now, we are treating this as a success to enable the workflow
+    console.log("Saving Identity:", { brandName, etsyUrls, shopifyUrls });
+
+    return json({ success: true });
 };
 
 export default function Onboarding() {
