@@ -16,10 +16,11 @@ import {
 import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 
+import { redirect } from "@remix-run/node";
+
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   await authenticate.admin(request);
-
-  return null;
+  return redirect("/app/bulk-analyzer");
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
