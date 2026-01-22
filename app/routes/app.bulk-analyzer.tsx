@@ -223,7 +223,7 @@ export default function BulkAnalyzer() {
                   {loading ? "Analyzing..." : "Analyze Products"}
                 </Button>
 
-                {/* PHOENIX FLOW: EXECUTIVE TRIGGER */}
+                {/* PHOENIX FLOW: CONTENT ENGINE */}
                 <Button
                   tone="critical"
                   onClick={() => {
@@ -235,7 +235,22 @@ export default function BulkAnalyzer() {
                   }}
                   disabled={loading}
                 >
-                  ⚡ EXECUTE VISUAL BURST (15)
+                  🧠 CONTENT BURST (40)
+                </Button>
+
+                {/* PHOENIX FLOW: VISUAL ENGINE */}
+                <Button
+                  tone="success"
+                  onClick={() => {
+                    setLoading(true);
+                    fetcher.submit(
+                      {},
+                      { method: "POST", action: "/api/media-optimizer" }
+                    );
+                  }}
+                  disabled={loading}
+                >
+                  👁️ VISUAL BURST (40)
                 </Button>
               </InlineStack>
 
@@ -265,10 +280,10 @@ export default function BulkAnalyzer() {
               <BlockStack gap="400">
                 <InlineStack>
                   <Badge tone="success">
-                    {readyToApply} Ready to Apply
+                    {`${readyToApply} Ready to Apply`}
                   </Badge>
                   <Badge tone="warning">
-                    {needsReview} Needs Review
+                    {`${needsReview} Needs Review`}
                   </Badge>
                 </InlineStack>
 

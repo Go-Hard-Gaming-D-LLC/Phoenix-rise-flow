@@ -13,6 +13,7 @@
       "routes/webhooks.app.scopes_update": "nodejs-eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/api.generate-description": "nodejs-eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/webhooks.app.uninstalled": "nodejs-eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/api.executive-burst": "nodejs-eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/api.proxy.shopify": "nodejs-eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/api.bulk-analyze": "nodejs-eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/api.optimizer": "nodejs-eyJydW50aW1lIjoibm9kZWpzIn0",
@@ -59,6 +60,15 @@
         "parentId": "root",
         "file": "app/routes/webhooks.app.uninstalled.tsx",
         "path": "webhooks/app/uninstalled",
+        "config": {
+          "runtime": "nodejs"
+        }
+      },
+      "routes/api.executive-burst": {
+        "id": "routes/api.executive-burst",
+        "parentId": "root",
+        "file": "app/routes/api.executive-burst.tsx",
+        "path": "api/executive-burst",
         "config": {
           "runtime": "nodejs"
         }
@@ -245,6 +255,12 @@
         "parentId": "root",
         "file": "routes/webhooks.app.uninstalled.tsx",
         "path": "webhooks/app/uninstalled"
+      },
+      "routes/api.executive-burst": {
+        "id": "routes/api.executive-burst",
+        "parentId": "root",
+        "file": "routes/api.executive-burst.tsx",
+        "path": "api/executive-burst"
       },
       "routes/api.proxy.shopify": {
         "id": "routes/api.proxy.shopify",
