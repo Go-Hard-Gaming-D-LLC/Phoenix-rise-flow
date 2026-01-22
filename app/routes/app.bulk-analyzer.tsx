@@ -222,6 +222,21 @@ export default function BulkAnalyzer() {
                 >
                   {loading ? "Analyzing..." : "Analyze Products"}
                 </Button>
+
+                {/* PHOENIX FLOW: EXECUTIVE TRIGGER */}
+                <Button
+                  tone="critical"
+                  onClick={() => {
+                    setLoading(true);
+                    fetcher.submit(
+                      {},
+                      { method: "POST", action: "/api/executive-burst" }
+                    );
+                  }}
+                  disabled={loading}
+                >
+                  ⚡ EXECUTE VISUAL BURST (15)
+                </Button>
               </InlineStack>
 
               {fetcher.data?.error && (
@@ -260,8 +275,8 @@ export default function BulkAnalyzer() {
                 <DataTable
                   columnContentTypes={[
                     "text",
-                    "numeric",
-                    "numeric",
+                    "text",
+                    "text",
                     "text",
                     "text",
                   ]}
@@ -351,18 +366,18 @@ export default function BulkAnalyzer() {
                     onClick={() => {
                       // Apply this product's changes
                       // If user unchecked tags, remove them from payload
-                      const payload = { ...selectedResult };
+                      const productToApply = { ...selectedResult };
                       if (!applyTags) {
-                        delete payload.suggestedTags;
+                        delete productToApply.suggestedTags;
                       }
 
-                      const payload = {
-                        products: [productPayload],
+                      const submissionPayload = {
+                        products: [productToApply],
                         mode: "apply"
                       };
 
                       fetcher.submit(
-                        payload as any,
+                        submissionPayload as any,
                         { method: "POST", action: "/api/bulk-analyze", encType: "application/json" }
                       );
                       setSelectedResult(null);
