@@ -1,0 +1,21 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "6b8c24699b2ba018192e65a4d19f80bd"
+name = "Phoenix Flow"
+application_url = "https://phoenix-rise-flow.vercel.app"
+embedded = true
+
+[webhooks]
+api_version = "2026-01"
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "read_files,write_files,read_inventory,read_legal_policies,read_locations,read_online_store_navigation,write_online_store_navigation,read_products,write_products,read_content,write_content,read_themes,write_themes"
+optional_scopes = [ "write_inventory" ]
+use_legacy_install_flow = false
+
+[auth]
+redirect_urls = [
+  "https://phoenix-rise-flow.vercel.app/auth/callback",
+  "https://phoenix-rise-flow.vercel.app/auth/shopify/callback"
+]

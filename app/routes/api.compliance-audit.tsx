@@ -1,74 +1,62 @@
-import type { ActionFunctionArgs } from "@remix-run/node";
-import { json } from "@remix-run/node";
-import { authenticate } from "../shopify.server";
-
-// SYSTEM ROLE: PHOENIX FLOW TRUST GUARDIAN
-// FUNCTION: Compliance Audit (NAP & Policies).
-// LOGIC: Check Footer/Policies vs Product Details.
+import { type ActionFunctionArgs } from "@remix-run/node";
+// FIX 2614: Using the correct default export for Iron Phoenix
+import shopify from "../shopify.server";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-    const { admin } = await authenticate.admin(request);
+  // 1. AUTHENTICATE: Establish the secure handshake
+  const { admin } = await shopify.authenticate.admin(request);
 
-    try {
-        // 1. FETCH SHOP POLICIES & INFO
-        const shopQuery = await admin.graphql(
-            `#graphql
-      query getShopDetails {
+  try {
+    // 2. QUERY: Fetching Vitals and Policies in one efficient burst
+    const response = await admin.graphql(
+      `#graphql
+      query checkComplianceVitals {
         shop {
           name
           email
-          billingAddress {
+          # FIX: billingAddress is deprecated; shopAddress is the 2026 standard
+          shopAddress {
             address1
             city
             country
-            zip
           }
+          # Policies are nested objects, not simple strings
           privacyPolicy { body }
           refundPolicy { body }
           shippingPolicy { body }
           termsOfService { body }
         }
       }`
-        );
+    );
 
-        const shopData = (await shopQuery.json()).data.shop;
-        const report = [];
-
-        // 2. NAP CHECK (Name, Address, Phone/Email)
-        // Google Merchant Center strict requirement.
-        const hasAddress = !!shopData.billingAddress;
-        const hasEmail = !!shopData.email;
-
-        if (!hasAddress || !hasEmail) {
-            report.push({ status: "FAIL", type: "NAP", message: "Missing Billing Address or Email in Store Settings." });
-        } else {
-            report.push({ status: "PASS", type: "NAP", details: "Address and Email detected." });
-        }
-
-        // 3. POLICY CHECK
-        const requiredPolicies = ["privacyPolicy", "refundPolicy", "shippingPolicy", "termsOfService"];
-
-        for (const policy of requiredPolicies) {
-            if (!shopData[policy]?.body) {
-                report.push({ status: "FAIL", type: "POLICY", message: `Missing ${policy}.` });
-            } else {
-                report.push({ status: "PASS", type: "POLICY", message: `${policy} detected.` });
-            }
-        }
-
-        // 4. MISREPRESENTATION CHECK (Logic)
-        // If shipping policy exists but is empty or too short (< 50 words), flag it.
-        if (shopData.shippingPolicy?.body) {
-            const wordCount = shopData.shippingPolicy.body.split(/\s+/).length;
-            if (wordCount < 50) {
-                report.push({ status: "WARNING", type: "MISREPRESENTATION", message: "Shipping Policy is too short. Risk of suspension." });
-            }
-        }
-
-        return json({ status: "AUDITED", report });
-
-    } catch (error) {
-        console.error("Trust Guardian Error:", error);
-        return json({ error: "Audit Failed" }, { status: 500 });
+    const resJson: any = await response.json();
+    
+    // Check for GraphQL errors (e.g., missing scopes)
+    if (resJson.errors) {
+      console.error("GraphQL Error in Audit:", resJson.errors);
+      return Response.json({ status: "Error", message: "GraphQL Validation Failed" }, { status: 400 });
     }
+
+    const shop = resJson.data?.shop || {};
+
+    // 3. ANALYZE: Determine if the store foundation is "Action Ready"
+    // We check for both the existence of the policy and that the body isn't empty
+    const missingPolicies = [
+      (!shop.privacyPolicy || !shop.privacyPolicy.body) && "Privacy",
+      (!shop.refundPolicy || !shop.refundPolicy.body) && "Refund",
+      (!shop.shippingPolicy || !shop.shippingPolicy.body) && "Shipping",
+      (!shop.termsOfService || !shop.termsOfService.body) && "ToS"
+    ].filter(Boolean);
+
+    // 4. REPORT: Return the status to update the Vitals Badge on the Dashboard
+    return Response.json({ 
+      status: missingPolicies.length === 0 ? "Healthy" : "Attention Required",
+      missing: missingPolicies,
+      shopName: shop.name
+    });
+
+  } catch (err: any) {
+    console.error("Compliance Audit Critical Failure:", err);
+    return Response.json({ error: err.message }, { status: 500 });
+  }
 };

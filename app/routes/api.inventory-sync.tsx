@@ -1,35 +1,25 @@
 import type { ActionFunctionArgs } from "@remix-run/node";
-import { json } from "@remix-run/node";
-import { authenticate } from "../shopify.server";
-
-// SYSTEM ROLE: PHOENIX FLOW LOGISTICS BRIDGE
-// FUNCTION: Sync Inventory across platforms.
-// LOGIC: Overwrite lower number with higher number.
+// FIX 2614: Import the default shopify object and then use authenticate from it
+import shopify from "../shopify.server";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-    const { admin } = await authenticate.admin(request);
+    // FIX 2614: Use the authenticated admin from the shopify object
+    const { admin } = await shopify.authenticate.admin(request);
 
     try {
-        // 1. FETCH SHOPIFY INVENTORY
         const response = await admin.graphql(
             `#graphql
-      query fetchInventory {
+      query fetchVendorInventory {
         products(first: 50) {
-          edges {
-            node {
-              id
-              title
-              variants(first: 10) {
-                edges {
-                  node {
-                    id
-                    sku
-                    inventoryQuantity
-                    inventoryItem {
-                      id
-                    }
-                  }
-                }
+          nodes {
+            id
+            title
+            vendor
+            variants(first: 10) {
+              nodes {
+                id
+                inventoryQuantity
+                inventoryItem { id }
               }
             }
           }
@@ -37,67 +27,63 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       }`
         );
 
-        const products = (await response.json()).data.products.edges.map((e: any) => e.node);
+        const responseJson: any = await response.json();
+        const products = responseJson.data?.products?.nodes || [];
         const report = [];
 
-        // 2. MOCK EXTERNAL FETCH (Etsy/TikTok)
-        // In a real scenario, we'd fetch from Etsy API here using SKU matching.
-        // For "Hand-Held" logic demonstration, we simulate an external source.
-        const externalInventory = [
-            { sku: "DEMO-SKU-1", quantity: 5 }, // Example
-        ];
-
         for (const product of products) {
-            for (const edge of product.variants.edges) {
-                const variant = edge.node;
-                if (!variant.sku) continue;
-
-                // 3. COMPARE LOGIC: Overwrite Lower with Higher
-                const shopifyQty = variant.inventoryQuantity;
-                // Find matching external SKU
-                const externalItem = externalInventory.find(e => e.sku === variant.sku);
-                const externalQty = externalItem ? externalItem.quantity : shopifyQty; // Default to match if not found
-
-                if (externalQty !== shopifyQty) {
-                    const highestQty = Math.max(shopifyQty, externalQty);
-
-                    // If Shopify is the lower one, update Shopify
-                    if (shopifyQty < highestQty) {
-                        // EXECUTE UPDATE
+            const vendor = product.vendor || "";
+            
+            // --- CJ DROPSHIPPING: HIDE IF 0 ---
+            if (vendor.includes("CJ") || vendor.includes("Dropshipping")) {
+                for (const variant of product.variants.nodes) {
+                    if (variant.inventoryQuantity <= 0) {
+                        // FIX: Use stable GraphQL syntax for archiving
                         await admin.graphql(
                             `#graphql
-               mutation inventoryAdjust($input: InventoryAdjustQuantityInput!) {
-                 inventoryAdjustQuantity(input: $input) {
-                   inventoryLevel {
-                     quantities(names: ["available"]) {
-                       quantity
-                     }
-                   }
-                 }
-               }`,
-                            {
-                                variables: {
-                                    input: {
-                                        inventoryItemId: variant.inventoryItem.id,
-                                        availableDelta: highestQty - shopifyQty // Adjust by difference
-                                    }
-                                }
-                            }
+                            mutation hideProduct($id: ID!) {
+                              productUpdate(input: { id: $id, status: ARCHIVED }) {
+                                product { id }
+                              }
+                            }`,
+                            { variables: { id: product.id } }
                         );
-                        report.push({ sku: variant.sku, action: "UPDATED_SHOPIFY", newQty: highestQty });
+                        report.push({ title: product.title, action: "ARCHIVED" });
                     }
-                    // If External is lower, we would call Etsy API here to update it.
-                    else {
-                        report.push({ sku: variant.sku, action: "PENDING_EXTERNAL_UPDATE", target: "ETSY", newQty: highestQty });
+                }
+            }
+
+            // --- POD VENDORS: SAFETY FLOOR 3 ---
+            const podVendors = ["Printify", "Printful", "Teelaunch", "AnywherePod"];
+            if (podVendors.some(v => vendor.includes(v))) {
+                for (const variant of product.variants.nodes) {
+                    if (variant.inventoryQuantity < 3) {
+                        await admin.graphql(
+                            `#graphql
+                            mutation setFloor($input: InventorySetQuantitiesInput!) {
+                              inventorySetQuantities(input: $input) {
+                                userErrors { message }
+                              }
+                            }`,
+                            { variables: { input: {
+                                name: "available",
+                                reason: "correction",
+                                quantities: [{
+                                    inventoryItemId: variant.inventoryItem.id,
+                                    locationId: "YOUR_LOCATION_ID", // We still need your real ID here
+                                    quantity: 3
+                                }]
+                            } } }
+                        );
+                        report.push({ title: product.title, action: "FLOOR_SET_3" });
                     }
                 }
             }
         }
 
-        return json({ status: "SYNCED", report });
+        return Response.json({ status: "SYNCED", report });
 
-    } catch (error) {
-        console.error("Logistics Bridge Error:", error);
-        return json({ error: "Sync Failed" }, { status: 500 });
+    } catch (error: any) {
+        return Response.json({ error: error.message }, { status: 500 });
     }
 };
