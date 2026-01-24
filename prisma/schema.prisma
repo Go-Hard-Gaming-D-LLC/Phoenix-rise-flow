@@ -7,7 +7,7 @@ generator client {
   binaryTargets = ["native", "rhel-openssl-3.0.x"]
 datasource db {
   provider = "postgresql"
-  url      = DATABASE_URL="postgresql://f185a0c475698f3549eea28ae388d8eee5c39b7f6fdd15d9a25f59bf3d0ba450:sk_jQ9kt2WuXi9ag-nf7_L8S@db.prisma.io:5432/postgres?sslmode=require"
+  url      = env("DATABASE_URL")
 }
 
 model Session {
