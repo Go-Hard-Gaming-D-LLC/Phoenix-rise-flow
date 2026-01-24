@@ -25,4 +25,4 @@ const shopify = shopifyApp({
 });
 
 export default shopify;
-// ... (keep the rest of your exports the same)
+export const authenticate = shopify.authenticate; 

@@ -1,3 +1,15 @@
+interface OptimizationData {
+  listingGrade?: {
+    score: number;
+    feedback: { seo: string; description: string; photography: string; };
+    optimization: {
+      shopifyProductTitle: string;
+      shopifyMetaDescription: string;
+      optimizedDescription: string;
+    };
+  };
+  error?: string;
+}
 import { useState } from "react";
 import { useFetcher } from "@remix-run/react";
 import {

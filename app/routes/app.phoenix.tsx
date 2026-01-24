@@ -1,65 +1,104 @@
-import { useState, useEffect } from 'react';
-import type { LoaderFunctionArgs } from "@remix-run/node";
-import { useFetcher } from '@remix-run/react';
-import { Page, Layout, Card, Text, TextField, Button, BlockStack, Banner, Box } from '@shopify/polaris';
-import { authenticate } from "../shopify.server";
+import { useState } from 'react';
+import { json, type LoaderFunctionArgs } from "@remix-run/node";
+import { useFetcher, useLoaderData } from '@remix-run/react';
+import { Page, Layout, Card, Text, TextField, Button, BlockStack, Banner, Box, List } from '@shopify/polaris';
+import shopify from "../shopify.server";
 
+// THE LOADER: This is the "Eyes" of the app
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-    await authenticate.admin(request);
-    return null;
+    const { admin } = await shopify.authenticate.admin(request);
+    
+    // Automatically fetches your gaming inventory
+    const response = await admin.graphql(`
+      query {
+        products(first: 10) {
+          nodes {
+            id
+            title
+            handle
+          }
+        }
+      }
+    `);
+    
+    const { data } = await response.json();
+    return json({ products: data.products.nodes });
 };
 
 export default function PhoenixFlow() {
-    const [prompt, setPrompt] = useState('');
+    const { products } = useLoaderData<typeof loader>();
+    const [prompt, setPrompt] = useState('Analyze these products for gaming trends and SEO optimization.');
     const fetcher = useFetcher<{ content?: string; error?: string }>();
 
     const isLoading = fetcher.state === 'submitting' || fetcher.state === 'loading';
 
-    const handleGenerate = () => {
-        // Use fetcher for cleaner SPA-like interaction
+    const handleBulkAnalyze = () => {
+        // Sends all products to the Gemini AI Brain at once
         fetcher.submit(
-            { prompt },
-            { method: 'POST', action: '/api/phoenix', encType: 'application/json' }
+            { 
+                prompt,
+                productIds: products.map((p: { id: string }) => p.id).join(',') 
+            },
+            { method: 'POST', action: '/api/bulk-analyze', encType: 'application/json' }
         );
     };
 
     return (
-        <Page title="Phoenix Flow AI">
+        <Page title="Phoenix Flow: Mission Control">
             <Layout>
+                {/* AUTOMATION SECTION */}
+                <Layout.Section>
+                    <Banner tone="info">
+                        <Text as="p">The Go-Getter is active. {products.length} products found in your store.</Text>
+                    </Banner>
+                </Layout.Section>
+
                 <Layout.Section>
                     <Card>
                         <BlockStack gap="400">
-                            <Text as="h2" variant="headingMd">Generate Content</Text>
+                            <Text as="h2" variant="headingMd">Bulk Portfolio Analyzer</Text>
                             <TextField
-                                label="Prompt"
+                                label="AI Instructions"
                                 value={prompt}
                                 onChange={setPrompt}
-                                multiline={4}
+                                multiline={3}
                                 autoComplete="off"
                                 disabled={isLoading}
                             />
-
-                            <Button onClick={handleGenerate} loading={isLoading} variant="primary">
-                                Generate with Gemini
+                            <Button onClick={handleBulkAnalyze} loading={isLoading} variant="primary" size="large">
+                                Run $50k Store Scan
                             </Button>
-
-                            {fetcher.data?.error && (
-                                <Banner tone="critical">
-                                    <p>{fetcher.data.error}</p>
-                                </Banner>
-                            )}
-
-                            {fetcher.data?.content && (
-                                <BlockStack gap="200">
-                                    <Text as="h3" variant="headingSm">Result:</Text>
-                                    <Box padding="400" background="bg-surface-secondary" borderRadius="200">
-                                        <Text as="p">{fetcher.data.content}</Text>
-                                    </Box>
-                                </BlockStack>
-                            )}
                         </BlockStack>
                     </Card>
                 </Layout.Section>
+
+                {/* PRODUCT LIST SECTION: No more manual copy-pasting! */}
+                <Layout.Section variant="oneThird">
+                    <Card>
+                        <BlockStack gap="200">
+                            <Text as="h2" variant="headingMd">Detected Inventory</Text>
+                            <List type="bullet">
+                                {products.map((product: { id: string; title: string }) => (
+                                    <List.Item key={product.id}>{product.title}</List.Item>
+                                ))}
+                            </List>
+                        </BlockStack>
+                    </Card>
+                </Layout.Section>
+
+                {/* RESULTS SECTION */}
+                {fetcher.data?.content && (
+                    <Layout.Section>
+                        <Card>
+                            <BlockStack gap="200">
+                                <Text as="h3" variant="headingSm">Gemini Market Insights:</Text>
+                                <Box padding="400" background="bg-surface-secondary" borderRadius="200">
+                                    <Text as="p">{fetcher.data.content}</Text>
+                                </Box>
+                            </BlockStack>
+                        </Card>
+                    </Layout.Section>
+                )}
             </Layout>
         </Page>
     );

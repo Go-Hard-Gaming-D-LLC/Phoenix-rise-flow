@@ -17,9 +17,12 @@ database.sqlite
 
 
 
-
 /extensions/*/dist
 
 # Ignore shopify files created during app dev
 .shopify/*
 .shopify.lock
+node_modules
+
+# Large media library
+Restored_Suno_Library

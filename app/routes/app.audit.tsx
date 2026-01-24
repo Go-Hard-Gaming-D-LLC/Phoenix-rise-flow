@@ -1,109 +1,132 @@
-import { useEffect, useState } from "react";
-import type { LoaderFunctionArgs } from "@remix-run/node";
-import { useFetcher } from "@remix-run/react";
+import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
+import { useFetcher, useLoaderData } from "@remix-run/react";
 import {
-    Page,
-    Layout,
-    Card,
-    BlockStack,
-    Text,
-    Button,
-    Banner,
-    List,
-    Box,
-    ProgressBar
+  Page,
+  Layout,
+  Card,
+  Button,
+  BlockStack,
+  Text,
+  Banner,
+  List,
+  Box,
 } from "@shopify/polaris";
 import { TitleBar } from "@shopify/app-bridge-react";
-import { authenticate } from "../shopify.server";
+
+// FIX 2614: Standardized default import for the Shopify object
+import shopify from "../shopify.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-    await authenticate.admin(request);
-    return null;
+  // Authenticate the session using the default shopify object
+  await shopify.authenticate.admin(request);
+  return json({ status: "Audit Engine Ready" });
 };
 
-// Define structure for Audit Results
-interface AuditResult {
-    brandVoice: string;
-    complianceRisk: "Low" | "Medium" | "High";
-    flaggedPolicies: string[];
-    topProducts: string[];
-    recommendations: string[];
-}
+export const action = async ({ request }: ActionFunctionArgs) => {
+  const { admin } = await shopify.authenticate.admin(request);
+  
+  try {
+    // PHASE 0: Executive Triage for Misrepresentation
+    // FIX: Using only valid Shop fields to clear GraphQL Validation errors
+    const response = await admin.graphql(
+      `#graphql
+      query getShopVitals {
+        shop {
+          name
+          url
+          contactEmail
+          primaryDomain {
+            url
+          }
+        }
+      }`
+    );
+
+    const responseJson = await response.json();
+    const shop = responseJson.data.shop;
+    
+    const issues = [];
+    // Basic compliance check for the $50k Store Goal
+    if (!shop.contactEmail) {
+        issues.push("Missing Contact Email: High risk for Google Merchant Center suspension.");
+    }
+    
+    // Placeholder for deeper policy checks via Shopify API
+    if (shop.url.includes("myshopify.com")) {
+        issues.push("Primary Domain: Using a .myshopify.com URL can impact trust scores.");
+    }
+
+    return json({ 
+      success: true, 
+      issues, 
+      shopName: shop.name 
+    });
+  } catch (error: any) {
+    return json({ error: error.message }, { status: 500 });
+  }
+};
 
 export default function AuditPage() {
-    const fetcher = useFetcher<AuditResult>();
-    const [loading, setLoading] = useState(false);
-    const [complete, setComplete] = useState(false);
+  const { status } = useLoaderData<typeof loader>();
+  const fetcher = useFetcher<any>();
+  const isLoading = fetcher.state !== "idle";
+  const results = fetcher.data;
 
-    const startAudit = () => {
-        setLoading(true);
-        fetcher.submit({ action: "audit_brand" }, { method: "POST", action: "/api/phoenix" });
-    };
+  return (
+    <Page>
+      <TitleBar title="Compliance Audit" />
+      <Layout>
+        <Layout.Section>
+          <Banner tone="info">
+            <Text as="p">{status}: Safeguarding the Iron Phoenix from Misrepresentation flags.</Text>
+          </Banner>
+        </Layout.Section>
 
-    useEffect(() => {
-        if (fetcher.data) {
-            setLoading(false);
-            setComplete(true);
-        }
-    }, [fetcher.data]);
+        <Layout.Section>
+          <Card>
+            <BlockStack gap="400">
+              <Text variant="headingMd" as="h2">Store Trust & Policy Audit</Text>
+              <Text as="p">Run a Phase 0 scan to identify legal gaps before scaling your designs.</Text>
+              <Button 
+                variant="primary" 
+                onClick={() => fetcher.submit({}, { method: "POST" })}
+                loading={isLoading}
+              >
+                Run Compliance Check
+              </Button>
+            </BlockStack>
+          </Card>
+        </Layout.Section>
 
-    return (
-        <Page>
-            <TitleBar title="Phoenix Flow: Brand Audit" />
-            <Layout>
-                <Layout.Section>
-                    <Card>
-                        <BlockStack gap="500">
-                            <Text as="h2" variant="headingLg">Initial Brand & Compliance Audit</Text>
-                            <Text as="p">
-                                Before taking action, Phoenix must analyze your store's brand voice and compliance policies to ensure
-                                all future actions (like alt-text injection) are aligned and safe.
-                            </Text>
-
-                            {!loading && !complete && (
-                                <Button variant="primary" size="large" onClick={startAudit}>
-                                    Start Brand Audit
-                                </Button>
-                            )}
-
-                            {loading && (
-                                <Box padding="400">
-                                    <ProgressBar progress={80} tone="highlight" />
-                                    <Text as="p" alignment="center">Analyzing Store Policies & Top Products...</Text>
-                                </Box>
-                            )}
-
-                            {complete && fetcher.data && (
-                                <BlockStack gap="400">
-                                    <Banner tone={fetcher.data.complianceRisk === "High" ? "critical" : "success"}>
-                                        <Text as="h3" variant="headingMd">Compliance Risk: {fetcher.data.complianceRisk}</Text>
-                                    </Banner>
-
-                                    <Box padding="400" background="bg-surface-secondary" borderRadius="200">
-                                        <Text as="h3" variant="headingSm">Detected Brand Voice</Text>
-                                        <Text as="p">{fetcher.data.brandVoice}</Text>
-                                    </Box>
-
-                                    {fetcher.data.flaggedPolicies.length > 0 && (
-                                        <Box>
-                                            <Text as="h3" variant="headingSm">⚠️ Policy Misrepresentations Detected</Text>
-                                            <List>
-                                                {fetcher.data.flaggedPolicies.map((policy, i) => (
-                                                    <List.Item key={i}>{policy}</List.Item>
-                                                ))}
-                                            </List>
-                                        </Box>
-                                    )}
-
-                                    <Button url="/app/bulk-analyzer" variant="primary">
-                                        Proceed to Visual Exoskeleton (Bulk Analyzer)
-                                    </Button>
-                                </BlockStack>
-                            )}
-                        </BlockStack>
-                    </Card>
-                </Layout.Section>
-            </Layout>
-        </Page>
-    );
+        {results?.issues && (
+          <Layout.Section>
+            <Card>
+              <BlockStack gap="400">
+                <Text variant="headingMd" as="h3">Audit Findings for {results.shopName}</Text>
+                {results.issues.length === 0 ? (
+                  <Banner tone="success">No critical misrepresentation issues found!</Banner>
+                ) : (
+                  /* FIX 2820: Using 'bg-fill-critical-secondary' to resolve TypeScript error */
+                  <Box 
+                    padding="400" 
+                    background="bg-fill-critical-secondary" 
+                    borderRadius="200"
+                  >
+                    <BlockStack gap="200">
+                      <Text as="p" fontWeight="bold">Compliance Gaps Detected:</Text>
+                      <List type="bullet">
+                        {results.issues.map((issue: string, i: number) => (
+                          <List.Item key={i}>{issue}</List.Item>
+                        ))}
+                      </List>
+                    </BlockStack>
+                  </Box>
+                )}
+              </BlockStack>
+            </Card>
+          </Layout.Section>
+        )}
+      </Layout>
+    </Page>
+  );
 }

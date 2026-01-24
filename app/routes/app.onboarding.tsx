@@ -1,31 +1,18 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { useFetcher, useLoaderData } from "@remix-run/react";
-import {
-    Page,
-    Layout,
-    Card,
-    Text,
-    TextField,
-    Button,
-    BlockStack,
-    Box,
-    Banner,
-} from "@shopify/polaris";
-import { authenticate } from "../shopify.server";
+import { Page, Box, Banner } from "@shopify/polaris";
+// Import shopify as default export
+import shopify from "../shopify.server";
 import db from "../db.server";
 
-// LOADER: Check if Business Vitals exist
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-    const { admin, session } = await authenticate.admin(request);
+    const { session } = await shopify.authenticate.admin(request);
     const shop = session.shop;
 
-    const config = await db.configuration.findUnique({
-        where: { shop },
-    });
+    const config = await db.configuration.findUnique({ where: { shop } });
 
-    // Parse JSON strings back to arrays if they exist
     const parsedConfig = config ? {
         ...config,
         etsyUrls: config.etsyUrls ? JSON.parse(config.etsyUrls) : [""],
@@ -35,40 +22,25 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     return json({ shop, config: parsedConfig });
 };
 
-// ACTION: Save Business Vitals
 export const action = async ({ request }: ActionFunctionArgs) => {
-    const { session } = await authenticate.admin(request);
-    // Parse JSON payload from frontend
+    const { session } = await shopify.authenticate.admin(request);
     const formData = await request.formData();
     const jsonString = formData.get("jsonPayload") as string;
 
-    let brandName, etsyUrls, shopifyUrls;
+    const payload = jsonString ? JSON.parse(jsonString) : { brandName: "", etsyUrls: [], shopifyUrls: [] };
 
-    if (jsonString) {
-        const payload = JSON.parse(jsonString);
-        brandName = payload.brandName;
-        etsyUrls = payload.etsyUrls;
-        shopifyUrls = payload.shopifyUrls;
-    } else {
-        // Fallback or empty
-        brandName = "";
-        etsyUrls = [];
-        shopifyUrls = [];
-    }
-
-    // Save to database
     await db.configuration.upsert({
         where: { shop: session.shop },
         update: {
-            brandName,
-            etsyUrls: JSON.stringify(etsyUrls),
-            shopifyUrls: JSON.stringify(shopifyUrls)
+            brandName: payload.brandName,
+            etsyUrls: JSON.stringify(payload.etsyUrls),
+            shopifyUrls: JSON.stringify(payload.shopifyUrls)
         },
         create: {
             shop: session.shop,
-            brandName,
-            etsyUrls: JSON.stringify(etsyUrls),
-            shopifyUrls: JSON.stringify(shopifyUrls)
+            brandName: payload.brandName,
+            etsyUrls: JSON.stringify(payload.etsyUrls),
+            shopifyUrls: JSON.stringify(payload.shopifyUrls)
         }
     });
 
@@ -76,160 +48,142 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 export default function Onboarding() {
-    const { shop, config } = useLoaderData<typeof loader>();
+    const { config } = useLoaderData<typeof loader>();
     const fetcher = useFetcher<any>();
-
-    // State for dynamic multi-url management - Initialize from DB if available
     const [brandName, setBrandName] = useState(config?.brandName || "");
     const [etsyUrls, setEtsyUrls] = useState<string[]>(config?.etsyUrls || [""]);
     const [shopifyUrls, setShopifyUrls] = useState<string[]>(config?.shopifyUrls || [""]);
 
-    const isLoading = fetcher.state === "submitting"; // Changed from navigation.state to fetcher.state to align with fetcher.submit
+    const isLoading = fetcher.state === "submitting";
     const isSaved = fetcher.data?.success;
 
-    // Handlers for dynamic fields
     const handleUrlChange = (type: 'etsy' | 'shopify', index: number, value: string) => {
+        const newUrls = type === 'etsy' ? [...etsyUrls] : [...shopifyUrls];
+        newUrls[index] = value;
+        type === 'etsy' ? setEtsyUrls(newUrls) : setShopifyUrls(newUrls);
+    };
+
+    const handleAddUrl = (type: 'etsy' | 'shopify') => {
         if (type === 'etsy') {
-            const newUrls = [...etsyUrls];
-            newUrls[index] = value;
-            setEtsyUrls(newUrls);
+            setEtsyUrls([...etsyUrls, ""]);
         } else {
-            const newUrls = [...shopifyUrls];
-            newUrls[index] = value;
-            setShopifyUrls(newUrls);
+            setShopifyUrls([...shopifyUrls, ""]);
         }
     };
 
-    const addUrl = (type: 'etsy' | 'shopify') => {
-        if (type === 'etsy') setEtsyUrls([...etsyUrls, ""]);
-        else setShopifyUrls([...shopifyUrls, ""]);
-    };
-
-    const removeUrl = (type: 'etsy' | 'shopify', index: number) => {
-        if (type === 'etsy') {
-            const newUrls = etsyUrls.filter((_, i) => i !== index);
-            setEtsyUrls(newUrls.length ? newUrls : [""]); // Keep at least one
-        } else {
-            const newUrls = shopifyUrls.filter((_, i) => i !== index);
-            setShopifyUrls(newUrls.length ? newUrls : [""]);
+    const handleRemoveUrl = (type: 'etsy' | 'shopify', index: number) => {
+        if (type === 'etsy' && etsyUrls.length > 1) {
+            setEtsyUrls(etsyUrls.filter((_, i) => i !== index));
+        } else if (type === 'shopify' && shopifyUrls.length > 1) {
+            setShopifyUrls(shopifyUrls.filter((_, i) => i !== index));
         }
     };
 
     return (
         <div className="mission-control-layout">
-            {/* Sidebar (Visual only for now, matching the screenshot layout) */}
             <div className="config-sidebar">
-                <div className="sidebar-header">
-                    <span style={{ fontSize: "1.5rem" }}>✦</span>
-                    <h3>Merchant Co-Pilot</h3>
-                </div>
-                <div className="sidebar-content">
-                    <div className="action-card">
-                        <h2>Command Center</h2>
-                        <p>System Online</p>
+                <div className="sidebar-header"><h3>Phoenix Flow</h3></div>
+                <div className="action-card">
+                    <h2>Free Tier</h2>
+                    <p>Vitals Report: <b>Ready</b></p>
+                    <p className="tier-info">• Scan up to 5 products<br/>• PDF Misrepresentation Alert<br/>• Manual policy fixes</p>
+                    <button className="download-btn">Download PDF Audit</button>
+                    <div className="upgrade-hint">
+                        <small>Upgrade to scan 10+ products</small>
                     </div>
                 </div>
             </div>
 
-            {/* Main Board */}
             <div className="mission-board">
                 <header className="board-header">
-                    <div>
-                        <h1>Business Vitals</h1>
-                        <p>First, Define Your Brand Identity. This is essential context for the AI.</p>
-                    </div>
+                    <h1>Business Vitals</h1>
+                    <p>Set up your store details. We'll scan for policy gaps & misrepresentation risks; you choose the fix.</p>
                 </header>
 
-                <div className="action-panel-grid" style={{ marginTop: '20px' }}>
+                <div className="action-panel-grid">
                     <div className="brand-identity-setup">
-                        <h2>Identity Configuration</h2>
-
-                        <div className="input-row">
-                            <label>OFFICIAL BRAND NAME *</label>
-                            <div className="icon-input-wrapper">
-                                <span>✦</span>
-                                <input
-                                    type="text"
-                                    value={brandName}
-                                    onChange={(e) => setBrandName(e.target.value)}
-                                    placeholder="e.g. Iron Phoenix"
+                        <h2>Store Information</h2>
+                        <p className="helper-text">Enter your store details so we can scan for policy violations and misrepresentation risks.</p>
+                        
+                        <label>Store Name</label>
+                        <input 
+                            type="text" 
+                            value={brandName} 
+                            onChange={(e) => setBrandName(e.target.value)} 
+                            placeholder="e.g., My Handmade Shop" 
+                        />
+                        
+                        <div className="manual-entry-divider"><span>Etsy Store URLs</span></div>
+                        {etsyUrls.map((url, i) => (
+                            <div key={i} className="url-input-group">
+                                <input 
+                                    type="text" 
+                                    value={url} 
+                                    onChange={(e) => handleUrlChange('etsy', i, e.target.value)} 
+                                    placeholder="https://www.etsy.com/shop/example"
                                 />
+                                {etsyUrls.length > 1 && (
+                                    <button 
+                                        className="remove-btn" 
+                                        onClick={() => handleRemoveUrl('etsy', i)}
+                                        type="button"
+                                    >
+                                        ✕
+                                    </button>
+                                )}
                             </div>
-                        </div>
+                        ))}
+                        <button 
+                            className="add-url-btn" 
+                            onClick={() => handleAddUrl('etsy')}
+                            type="button"
+                        >
+                            + Add Etsy Store
+                        </button>
 
-                        {/* Dynamic Etsy URLs */}
-                        <div style={{ marginTop: '20px' }}>
-                            <div className="manual-entry-divider"><span>Etsy Storefronts</span></div>
-                            {etsyUrls.map((url, index) => (
-                                <div className="input-row with-remove" key={`etsy-${index}`} style={{ marginBottom: '10px' }}>
-                                    <div className="icon-input-wrapper">
-                                        <span>🔗</span>
-                                        <input
-                                            type="text"
-                                            value={url}
-                                            onChange={(e) => handleUrlChange('etsy', index, e.target.value)}
-                                            placeholder="https://etsy.com/shop/..."
-                                        />
-                                    </div>
-                                    {etsyUrls.length > 1 && (
-                                        <button className="remove-btn" onClick={() => removeUrl('etsy', index)}>🗑️</button>
-                                    )}
-                                </div>
-                            ))}
-                            <button className="add-url-btn" onClick={() => addUrl('etsy')}>+ Add Another Etsy Store</button>
-                        </div>
+                        <div className="manual-entry-divider"><span>Shopify Store URLs</span></div>
+                        {shopifyUrls.map((url, i) => (
+                            <div key={i} className="url-input-group">
+                                <input 
+                                    type="text" 
+                                    value={url} 
+                                    onChange={(e) => handleUrlChange('shopify', i, e.target.value)} 
+                                    placeholder="https://example.myshopify.com"
+                                />
+                                {shopifyUrls.length > 1 && (
+                                    <button 
+                                        className="remove-btn" 
+                                        onClick={() => handleRemoveUrl('shopify', i)}
+                                        type="button"
+                                    >
+                                        ✕
+                                    </button>
+                                )}
+                            </div>
+                        ))}
+                        <button 
+                            className="add-url-btn" 
+                            onClick={() => handleAddUrl('shopify')}
+                            type="button"
+                        >
+                            + Add Shopify Store
+                        </button>
 
-                        {/* Dynamic Shopify URLs */}
-                        <div style={{ marginTop: '20px' }}>
-                            <div className="manual-entry-divider"><span>Shopify Storefronts</span></div>
-                            {shopifyUrls.map((url, index) => (
-                                <div className="input-row with-remove" key={`shopify-${index}`} style={{ marginBottom: '10px' }}>
-                                    <div className="icon-input-wrapper">
-                                        <span>🛍️</span>
-                                        <input
-                                            type="text"
-                                            value={url}
-                                            onChange={(e) => handleUrlChange('shopify', index, e.target.value)}
-                                            placeholder="https://yourstore.myshopify.com"
-                                        />
-                                    </div>
-                                    {shopifyUrls.length > 1 && (
-                                        <button className="remove-btn" onClick={() => removeUrl('shopify', index)}>🗑️</button>
-                                    )}
-                                </div>
-                            ))}
-                            <button className="add-url-btn" onClick={() => addUrl('shopify')}>+ Add Another Shopify Store</button>
-                        </div>
-
-                        <div style={{ marginTop: '30px' }}>
-                            <button
-                                className="prime-btn"
-                                disabled={isLoading}
-                                onClick={() => {
-                                    // Submit all data
-                                    const payload = {
-                                        brandName,
-                                        etsyUrls: etsyUrls.filter(u => u.trim() !== ""),
-                                        shopifyUrls: shopifyUrls.filter(u => u.trim() !== "")
-                                    };
-                                    // Convert payload to FormData-compatible or JSON submit
-                                    // Since action expects formData usually, but we can send JSON if we adjust action or use hidden inputs.
-                                    // Easiest is to just submit JSON string via fetcher
-                                    fetcher.submit(
-                                        { jsonPayload: JSON.stringify(payload) },
-                                        { method: "POST" }
-                                    );
-                                }}
-                            >
-                                {isLoading ? "Saving..." : "Save Identity & Initialize Engine"}
-                            </button>
-                        </div>
+                        <button 
+                            className="prime-btn" 
+                            disabled={isLoading || !brandName} 
+                            onClick={() => fetcher.submit(
+                                { jsonPayload: JSON.stringify({ brandName, etsyUrls: etsyUrls.filter(u => u), shopifyUrls: shopifyUrls.filter(u => u) }) }, 
+                                { method: "POST" }
+                            )}
+                        >
+                            {isLoading ? "Saving..." : "Start Scan"}
+                        </button>
 
                         {isSaved && (
-                            <div className="status-toast" style={{ marginTop: '20px', padding: '15px', borderRadius: '8px' }}>
-                                ✅ Identity Established. The Product Optimization Engine is ready.
-                                <a href="/app/bulk-analyzer" style={{ marginLeft: '10px', color: 'black', fontWeight: 'bold' }}>Go to Engine →</a>
-                            </div>
+                            <Banner tone="success">
+                                ✅ Store Configuration Saved. <a href="/app/audit">View your Policy Alert Report →</a>
+                            </Banner>
                         )}
                     </div>
                 </div>

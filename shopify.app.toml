@@ -19,3 +19,6 @@ redirect_urls = [
   "https://phoenix-rise-flow.vercel.app/auth/callback",
   "https://phoenix-rise-flow.vercel.app/auth/shopify/callback"
 ]
+
+[build]
+automatically_update_urls_on_dev = true
