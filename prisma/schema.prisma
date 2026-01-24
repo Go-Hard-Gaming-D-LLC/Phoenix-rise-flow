@@ -5,77 +5,79 @@
 generator client {
   provider      = "prisma-client-js"
   binaryTargets = ["native", "rhel-openssl-3.0.x"]
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
 model Session {
-  id                String    @id
-  shop              String
-  state             String
-  isOnline          Boolean   @default(false)
-  scope             String?
-  expires           DateTime?
-  accessToken       String    @db.Text
-  userId            BigInt?
-  firstName         String?
-  lastName          String?
-  email             String?
-  accountOwner      Boolean   @default(false)
-  locale            String?
-  collaborator      Boolean?  @default(false)
-  emailVerified     Boolean?  @default(false)
-  refreshToken      String?   @db.Text
+  id                  String    @id
+  shop                String
+  state               String
+  isOnline            Boolean   @default(false)
+  scope               String?
+  expires             DateTime?
+  accessToken         String    @db.Text
+  userId              BigInt?
+  firstName           String?
+  lastName            String?
+  email               String?
+  accountOwner        Boolean   @default(false)
+  locale              String?
+  collaborator        Boolean?  @default(false)
+  emailVerified       Boolean?  @default(false)
+  refreshToken        String?   @db.Text
   refreshTokenExpires DateTime?
-  
+
   @@index([shop])
   @@index([expires])
 }
 
 model Configuration {
-  id              Int       @id @default(autoincrement())
-  shop            String    @unique
+  id              Int      @id @default(autoincrement())
+  shop            String   @unique
   brandName       String?
   etsyUrls        String?
   shopifyUrls     String?
   identitySummary String?
   targetAudience  String?
   usp             String?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
   // NEW: Relations to tracking models
   optimizations OptimizationHistory[]
   bulkJobs      BulkAnalysisJob[]
-  
+
   @@index([shop])
 }
 
 // NEW: Track all AI optimization history
 model OptimizationHistory {
-  id              Int      @id @default(autoincrement())
-  shop            String
-  productId       String?
-  productName     String
+  id               Int     @id @default(autoincrement())
+  shop             String
+  productId        String?
+  productName      String
   optimizationType String
-  
-  originalContent String?  @db.Text
+
+  originalContent  String? @db.Text
   optimizedContent String  @db.Text
-  
-  aiModel         String   @default("gemini-1.5-flash")
-  promptUsed      String?  @db.Text
-  tokensUsed      Int?
-  
-  status          String   @default("success")
-  errorMessage    String?  @db.Text
+
+  aiModel    String  @default("gemini-1.5-flash")
+  promptUsed String? @db.Text
+  tokensUsed Int?
+
+  status           String  @default("success")
+  errorMessage     String? @db.Text
   processingTimeMs Int?
-  
-  createdAt       DateTime @default(now())
-  appliedAt       DateTime?
-  
-  configuration   Configuration @relation(fields: [shop], references: [shop])
-  
+
+  createdAt DateTime  @default(now())
+  appliedAt DateTime?
+
+  configuration Configuration @relation(fields: [shop], references: [shop])
+
   @@index([shop])
   @@index([productId])
   @@index([createdAt])
@@ -84,31 +86,31 @@ model OptimizationHistory {
 
 // NEW: Manage background bulk analysis jobs
 model BulkAnalysisJob {
-  id              String   @id @default(cuid())
-  shop            String
-  
-  jobType         String
-  totalProducts   Int      @default(0)
-  processedCount  Int      @default(0)
-  
-  status          String   @default("pending")
-  startedAt       DateTime?
-  completedAt     DateTime?
-  
-  successCount    Int      @default(0)
-  failureCount    Int      @default(0)
-  warningCount    Int      @default(0)
-  results         String?  @db.Text
-  
-  errorMessage    String?  @db.Text
-  lastError       String?  @db.Text
-  retryCount      Int      @default(0)
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  configuration   Configuration @relation(fields: [shop], references: [shop])
-  
+  id   String @id @default(cuid())
+  shop String
+
+  jobType        String
+  totalProducts  Int    @default(0)
+  processedCount Int    @default(0)
+
+  status      String    @default("pending")
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  successCount Int     @default(0)
+  failureCount Int     @default(0)
+  warningCount Int     @default(0)
+  results      String? @db.Text
+
+  errorMessage String? @db.Text
+  lastError    String? @db.Text
+  retryCount   Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  configuration Configuration @relation(fields: [shop], references: [shop])
+
   @@index([shop])
   @@index([status])
   @@index([createdAt])
@@ -116,20 +118,20 @@ model BulkAnalysisJob {
 
 // NEW: Store policy compliance scan results
 model PolicyScanResult {
-  id              Int      @id @default(autoincrement())
-  shop            String
-  productId       String?
-  
-  scanType        String
-  severity        String
-  issueFound      String   @db.Text
-  recommendation  String?  @db.Text
-  
-  resolved        Boolean  @default(false)
-  resolvedAt      DateTime?
-  
-  createdAt       DateTime @default(now())
-  
+  id        Int     @id @default(autoincrement())
+  shop      String
+  productId String?
+
+  scanType       String
+  severity       String
+  issueFound     String  @db.Text
+  recommendation String? @db.Text
+
+  resolved   Boolean   @default(false)
+  resolvedAt DateTime?
+
+  createdAt DateTime @default(now())
+
   @@index([shop])
   @@index([productId])
   @@index([resolved])
