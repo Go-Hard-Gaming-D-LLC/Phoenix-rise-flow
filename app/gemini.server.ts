@@ -1,8 +1,33 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// Initialize with your API Key
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+// ============================================================
+// PART 1: THE SAFETY LAYER (Singleton Pattern)
+// This prevents "Too Many Connections" errors during development
+// ============================================================
+let geminiClient: GoogleGenerativeAI | undefined;
+
+function getGeminiClient() {
+  if (!process.env.GEMINI_API_KEY) {
+    // Graceful fallback or error
+    console.error("❌ GEMINI_API_KEY is missing from .env");
+    throw new Error("GEMINI_API_KEY is not set.");
+  }
+  
+  // Reuse existing client if available
+  if (!geminiClient) {
+    geminiClient = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+  }
+  
+  return geminiClient;
+}
+
+// Initialize the model securely
+const model = getGeminiClient().getGenerativeModel({ model: 'gemini-1.5-flash' });
+
+
+// ============================================================
+// PART 2: PHOENIX FLOW LOGIC (Your Prompts)
+// ============================================================
 
 /**
  * PHOENIX FLOW: THE EXECUTIVE CONTENT ENGINE
@@ -187,4 +212,19 @@ OUTPUT: Valid JSON array ONLY.
       `Engine stalled: ${error instanceof Error ? error.message : "Unknown error"}`
     );
   }
+}
+model OptimizationHistory {
+  id                Int      @id @default(autoincrement())
+  shop              String
+  productId         String?
+  productName       String
+  optimizationType  String   // 'bulk_analysis', 'description', 'product_ad', 'music_video'
+  optimizedContent  String   @db.Text
+  aiModel           String   @default("gemini-1.5-flash")
+  status            String   @default("success")
+  createdAt         DateTime @default(now())
+
+  @@index([shop])
+  @@index([createdAt])
+  @@index([shop, optimizationType, createdAt])
 }
