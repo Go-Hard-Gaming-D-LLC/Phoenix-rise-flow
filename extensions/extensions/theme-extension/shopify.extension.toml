@@ -1,0 +1,8 @@
+# Learn more about configuring your theme app extension:
+# https://shopify.dev/api/admin-extensions/theme-app-extension-configuration
+
+name = "Merchant CoPilot Extension"
+type = "theme"
+
+[theme]
+# This defines the snippets and assets to be included/accessed
