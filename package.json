@@ -1,0 +1,41 @@
+{
+  "name": "merchant-co-pilot-workstation",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "postinstall": "prisma generate"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.7.0",
+    "@prisma/client": "^6.0.0",
+    "@shopify/shopify-app-remix": "^3.0.0",
+    "@shopify/app-bridge-react": "^4.0.0",
+    "bottleneck": "^2.19.5",
+    "lru-cache": "^11.2.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@shopify/cli": "^3.88.1",
+    "@shopify/theme": "^3.58.2",
+    "@types/node": "^22.7.0",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "prisma": "^6.0.0",
+    "typescript": "~5.6.2",
+    "vite": "^5.4.8"
+  },
+  "overrides": {
+    "cross-spawn": "^7.0.5",
+    "form-data": "^4.0.4",
+    "js-yaml": "^4.1.1",
+    "lodash": "^4.17.21"
+  }
+}
