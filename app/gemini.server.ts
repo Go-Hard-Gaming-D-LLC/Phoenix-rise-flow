@@ -1,3 +1,8 @@
+// Validate API key at startup
+if (!process.env.GEMINI_API_KEY) {
+  console.error("❌ CRITICAL: GEMINI_API_KEY is missing");
+  throw new Error("GEMINI_API_KEY must be set in environment variables");
+}
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 // ============================================================
@@ -212,19 +217,4 @@ OUTPUT: Valid JSON array ONLY.
       `Engine stalled: ${error instanceof Error ? error.message : "Unknown error"}`
     );
   }
-}
-model OptimizationHistory {
-  id                Int      @id @default(autoincrement())
-  shop              String
-  productId         String?
-  productName       String
-  optimizationType  String   // 'bulk_analysis', 'description', 'product_ad', 'music_video'
-  optimizedContent  String   @db.Text
-  aiModel           String   @default("gemini-1.5-flash")
-  status            String   @default("success")
-  createdAt         DateTime @default(now())
-
-  @@index([shop])
-  @@index([createdAt])
-  @@index([shop, optimizationType, createdAt])
 }
