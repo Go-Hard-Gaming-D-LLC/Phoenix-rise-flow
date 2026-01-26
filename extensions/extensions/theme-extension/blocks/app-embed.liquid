@@ -1,0 +1,16 @@
+{% schema %}
+{
+  "name": "Merchant Co-Pilot",
+  "target": "body",
+  "stylesheet": "merchant-copilot.css",
+  "javascript": "merchant-copilot.js",
+  "settings": []
+}
+{% endschema %}
+
+<div id="merchant-copilot-root"></div>
+<script>
+  window.merchantCoPilotConfig = {
+    shop: '{{ shop.permanent_domain }}',
+  };
+</script>

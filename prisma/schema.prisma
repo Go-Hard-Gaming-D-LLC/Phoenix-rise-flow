@@ -1,0 +1,64 @@
+// prisma/schema.prisma
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Session {
+  id                  String    @id
+  shop                String
+  state               String
+  isOnline            Boolean   @default(false)
+  scope               String?
+  expires             DateTime?
+  accessToken         String    @db.Text
+  userId              BigInt?
+  firstName           String?
+  lastName            String?
+  email               String?
+  accountOwner        Boolean   @default(false)
+  locale              String?
+  collaborator        Boolean?  @default(false)
+  emailVerified       Boolean?  @default(false)
+  refreshToken        String?   @db.Text
+  refreshTokenExpires DateTime?
+
+  @@index([shop])
+  @@index([expires])
+}
+
+model Configuration {
+  id              Int       @id @default(autoincrement())
+  shop            String    @unique
+  brandName       String?
+  etsyUrls        String?
+  shopifyUrls     String?
+  identitySummary String?
+  targetAudience  String?
+  usp             String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([shop])
+}
+
+model OptimizationHistory {
+  id                Int      @id @default(autoincrement())
+  shop              String
+  productId         String?
+  productName       String
+  optimizationType  String
+  optimizedContent  String   @db.Text
+  aiModel           String   @default("gemini-1.5-flash")
+  status            String   @default("success")
+  createdAt         DateTime @default(now())
+
+  @@index([shop])
+  @@index([createdAt])
+  @@index([shop, optimizationType, createdAt])
+}
