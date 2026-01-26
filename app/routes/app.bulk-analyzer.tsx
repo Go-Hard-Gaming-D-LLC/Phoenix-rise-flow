@@ -386,15 +386,17 @@ export default function BulkAnalyzer() {
                         delete productToApply.suggestedTags;
                       }
 
-                      const submissionPayload = {
-                        products: [productToApply],
-                        mode: "apply"
-                      };
+                      {
+                        const submissionPayload = {
+                          products: [productToApply],
+                          mode: "apply"
+                        };
 
-                      fetcher.submit(
-                        submissionPayload as any,
-                        { method: "POST", action: "/api/bulk-analyze", encType: "application/json" }
-                      );
+                        fetcher.submit(
+                          submissionPayload as any,
+                          { method: "POST", action: "/api/bulk-analyze", encType: "application/json" }
+                        );
+                      }
                       setSelectedResult(null);
                     }}
                   >
