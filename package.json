@@ -15,7 +15,10 @@
   "dependencies": {
     "@google/generative-ai": "^0.7.0",
     "@prisma/client": "^6.0.0",
+    "@remix-run/dev": "^2.17.4",
     "@remix-run/node": "^2.17.4",
+    "@remix-run/react": "^2.17.4",
+    "@remix-run/serve": "^2.17.4",
     "@shopify/app-bridge-react": "^4.0.0",
     "@shopify/shopify-app-remix": "^3.0.0",
     "@shopify/shopify-app-session-storage-prisma": "^8.0.1",

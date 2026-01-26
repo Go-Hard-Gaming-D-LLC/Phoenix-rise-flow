@@ -15,7 +15,7 @@ const shopify = shopifyApp({
   apiVersion: ApiVersion.October24, 
   scopes: process.env.SCOPES?.split(","),
   // UPDATE: This must match your Vercel URL
-  appUrl: "https://phoenix-rise-flow.vercel.app", 
+ appUrl: process.env.SHOPIFY_APP_URL || "https://phoenix-rise-flow.vercel.app"
   authPathPrefix: "/auth",
   sessionStorage: storage,
   distribution: AppDistribution.AppStore,
