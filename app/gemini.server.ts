@@ -220,31 +220,53 @@ OUTPUT: Valid JSON array ONLY.
 }
 
 /**
- * ignitePhoenix
- * General purpose AI generation for the Phoenix assistant.
+ * ignitePhoenix: Core function to interact with Gemini 1.5 Flash
+ * Acts as the Merchant Co-Pilot for general queries and strategy.
  */
-export async function ignitePhoenix(prompt: string, context: string = ''): Promise<string> {
+export async function ignitePhoenix(prompt: string, context: string = 'General Strategy') {
   try {
-    const fullPrompt = `Role: Shopify Merchant Co-Pilot.\nContext: ${context}\n\nUser Query: ${prompt}`;
-    const result = await model.generateContent(fullPrompt);
-    return result.response.text();
+    // System prompting to define the persona
+    const systemPrompt = `You are Phoenix Flow, a specialized Shopify Merchant Co-Pilot. Current Context: ${context}. Response format: Concise, actionable advice.`;
+
+    // Using the existing model instance
+    const result = await model.generateContent([systemPrompt, prompt]);
+    const response = await result.response;
+    return response.text();
   } catch (error) {
-    console.error('Phoenix Ignition Failed:', error);
-    throw new Error('AI Service temporarily unavailable.');
+    console.error('Phoenix Engine Failure:', error);
+    throw new Error('Failed to ignite Phoenix AI engine.');
   }
 }
 
 /**
- * analyzeProductData
- * specialized function for bulk analysis and optimization routes.
+ * analyzeProductData: specialized function for the Bulk Analyzer route
+ * Scans product JSON for SEO and trend gaps.
  */
-export async function analyzeProductData(productJson: any, strategy: string = 'conversion'): Promise<string> {
+export async function analyzeProductData(productData: any) {
   try {
-    const prompt = `Analyze the following Shopify product data focusing on a "${strategy}" strategy.\n\nProduct Data: ${JSON.stringify(productJson)}\n\nOutput format: JSON with keys "score" (1-100), "improvements" (array of strings), and "seo_title_suggestion".`;
+    const prompt = `
+      Analyze the following Shopify product data based on current market trends and SEO best practices.
+      Product Data: ${JSON.stringify(productData)}
+      
+      Output Requirements:
+      1. Identify 3 missing high-value keywords.
+      2. Rate the description effectiveness (1-10).
+      3. Suggest one demographic targeting improvement.
+      
+      Return response as valid JSON.
+    `;
+
+    // Using the existing model instance
     const result = await model.generateContent(prompt);
-    return result.response.text();
+    const response = await result.response;
+    return response.text();
   } catch (error) {
     console.error('Product Analysis Error:', error);
-    return JSON.stringify({ error: 'Analysis failed', score: 0 });
+    return JSON.stringify({
+      error: 'Analysis failed',
+      missing_keywords: [],
+      effectiveness_score: 0,
+      demographic_improvement: "N/A"
+    });
   }
 }

@@ -1,5 +1,4 @@
 
-
 export class ShopifyClient {
     private token: string;
     private domain: string;
@@ -121,7 +120,7 @@ export class ShopifyClient {
             proxyUrl.searchParams.append('shopify_url', `https://${this.domain}`);
             proxyUrl.searchParams.append('path', `/admin/api/2024-01/link_lists.json`);
             proxyUrl.searchParams.append('token', this.token);
-            
+
             const response = await fetch(proxyUrl.toString(), {
                 method: 'GET',
                 headers: this.getHeaders(),
@@ -163,7 +162,7 @@ export class ShopifyClient {
             proxyUrl.searchParams.append('shopify_url', `https://${this.domain}`);
             proxyUrl.searchParams.append('path', `/admin/api/2024-01/themes.json`);
             proxyUrl.searchParams.append('token', this.token);
-            
+
             const response = await fetch(proxyUrl.toString(), {
                 method: 'GET',
                 headers: this.getHeaders(),
@@ -182,7 +181,7 @@ export class ShopifyClient {
             proxyUrl.searchParams.append('shopify_url', `https://${this.domain}`);
             proxyUrl.searchParams.append('path', `/admin/api/2024-01/themes/${themeId}/assets.json?asset[key]=${key}`);
             proxyUrl.searchParams.append('token', this.token);
-            
+
             const response = await fetch(proxyUrl.toString(), {
                 method: 'GET',
                 headers: this.getHeaders(),
@@ -247,23 +246,14 @@ export class ShopifyClient {
             return { success: false, message: `Fix failed: ${e.message}` };
         }
     }
+
     async getSmartCollections(): Promise<any[]> {
         try {
             const proxyUrl = new URL('/api/proxy/shopify', window.location.origin);
             proxyUrl.searchParams.append('shopify_url', `https://${this.domain}`);
             proxyUrl.searchParams.append('path', `/admin/api/2024-01/smart_collections.json`);
             proxyUrl.searchParams.append('token', this.token);
-            
-            const response = await fetch(proxyUrl.toString(), {
-                method: 'GET',
-                headers: this.getHeaders(),
-            });
-            const data = await response.json();
-            return data.smart_collections || [];
-        } catch (error) {
-            console.error('Failed to get smart collections:', error);
-            return [];
-        }
+
             const response = await fetch(proxyUrl.toString(), {
                 method: 'GET',
                 headers: this.getHeaders(),
@@ -280,23 +270,17 @@ export class ShopifyClient {
         try {
             const payload = {
                 smart_collection: {
-                  proxyUrl = new URL('/api/proxy/shopify', window.location.origin);
-            const response = await fetch(proxyUrl.toString(), {
-                method: 'POST',
-                headers: this.getHeaders(),
-                body: JSON.stringify({
-                    shopify_url: `https://${this.domain}`,
-                    path: `/admin/api/2024-01/smart_collections.json`,
-                    token: this.token,
-                    method: 'POST',
-                    data: payload
-                }
+                    title: title,
+                    rules: [
+                        {
+                            column: 'tag',
                             relation: 'equals',
                             condition: ruleTag
                         }
                     ]
                 }
             };
+
             const proxyUrl = new URL('/api/proxy/shopify', window.location.origin);
             const response = await fetch(proxyUrl.toString(), {
                 method: 'POST',
@@ -354,7 +338,7 @@ export class ShopifyClient {
                 }
             `;
             const checkData = await this.graphql(checkQuery);
-            const missing = [];
+            const missing: any[] = [];
             if (!checkData.shop.refundPolicy) missing.push({ type: "REFUND_POLICY", title: "Refund Policy", body: "We have a 30-day return policy..." });
             if (!checkData.shop.privacyPolicy) missing.push({ type: "PRIVACY_POLICY", title: "Privacy Policy", body: "This Privacy Policy describes how..." });
             if (!checkData.shop.termsOfService) missing.push({ type: "TERMS_OF_SERVICE", title: "Terms of Service", body: "Overview..." });
@@ -426,6 +410,7 @@ export class ShopifyClient {
             return { success: false, message: `Fix failed: ${e.message}` };
         }
     }
+
     async getProductsGraphQL(): Promise<any[]> {
         const query = `
             query {
@@ -484,6 +469,7 @@ export class ShopifyClient {
             ]
         });
     }
+
     async updateProductSEO(productId: string, title: string, descriptionHtml: string, seoTitle: string, seoDesc: string): Promise<any> {
         const mutation = `
             mutation productUpdate($input: ProductInput!) {
@@ -535,6 +521,7 @@ export class ShopifyClient {
             }
         });
     }
+
     async updateProductDescription(productId: string, newDescriptionHtml: string): Promise<any> {
         const mutation = `
             mutation productUpdate($input: ProductInput!) {
@@ -552,4 +539,3 @@ export class ShopifyClient {
         });
     }
 }
-
