@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "shopify": "shopify"
   },
   "dependencies": {
     "@google/generative-ai": "^0.7.0",

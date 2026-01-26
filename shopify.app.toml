@@ -5,6 +5,9 @@ name = "Phoenix Flow"
 application_url = "https://phoenix-rise-flow.vercel.app"
 embedded = true
 
+[build]
+automatically_update_urls_on_dev = true
+
 [webhooks]
 api_version = "2026-01"
 
