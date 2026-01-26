@@ -35,7 +35,7 @@
   "devDependencies": {
     "@shopify/cli": "^3.88.1",
     "@shopify/theme": "^3.58.2",
-    "@types/node": "^22.7.0",
+    "@types/node": "^25.0.10",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
