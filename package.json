@@ -12,6 +12,9 @@
     "postinstall": "prisma generate",
     "shopify": "shopify"
   },
+  "engines": {
+    "node": "20.x || 22.x"
+  },
   "dependencies": {
     "@google/generative-ai": "^0.7.0",
     "@prisma/client": "^6.0.0",
