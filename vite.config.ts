@@ -1,6 +1,6 @@
-import path from 'path';
-import { defineConfig, loadEnv } from 'vite';
-import react from '@vitejs/plugin-react';
+import { vitePlugin as remix } from "@remix-run/dev";
+import { defineConfig, loadEnv } from "vite";
+import path from "path";
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
@@ -8,10 +8,9 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 3000,
       host: '0.0.0.0',
-      middlewareMode: false,
       proxy: {
         '/api/shopify': {
-          target: 'https://7f5b22-4.myshopify.com', // Fallback - will be overridden by client
+          target: 'https://7f5b22-4.myshopify.com',
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api\/shopify/, ''),
           configure: (proxy, options) => {
@@ -22,7 +21,15 @@ export default defineConfig(({ mode }) => {
         }
       }
     },
-    plugins: [react()],
+    plugins: [
+      remix({
+        future: {
+          v3_fetcherPersist: true,
+          v3_relativeSplatPath: true,
+          v3_throwAbortReason: true,
+        },
+      }),
+    ],
     define: {
       'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
@@ -30,17 +37,6 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
-      }
-    },
-    build: {
-      outDir: 'dist', // We will copy from here to your theme
-      rollupOptions: {
-        output: {
-          // These settings ensure the files are named consistently
-          // so we can easily reference them in your Shopify Theme (Liquid)
-          entryFileNames: 'merchant-copilot.js',
-          assetFileNames: 'merchant-copilot.[ext]',
-        }
       }
     }
   };
