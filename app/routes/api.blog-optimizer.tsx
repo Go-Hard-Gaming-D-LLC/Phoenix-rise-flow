@@ -1,10 +1,10 @@
 import { type ActionFunctionArgs } from "@remix-run/node";
 import shopify from "../shopify.server";
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const { admin } = await shopify.authenticate.admin(request);
-  const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
   const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
   try {
