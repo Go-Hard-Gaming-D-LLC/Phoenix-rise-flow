@@ -12,10 +12,10 @@ const storage = new PrismaSessionStorage(prisma);
 const shopify = shopifyApp({
   apiKey: process.env.SHOPIFY_API_KEY,
   apiSecretKey: process.env.SHOPIFY_API_SECRET || "",
-  apiVersion: ApiVersion.October24, 
+  apiVersion: ApiVersion.October24,
   scopes: process.env.SCOPES?.split(","),
   // UPDATE: This must match your Vercel URL
- appUrl: process.env.SHOPIFY_APP_URL || "https://phoenix-rise-flow.vercel.app"
+  appUrl: process.env.SHOPIFY_APP_URL || "https://phoenix-rise-flow.vercel.app",
   authPathPrefix: "/auth",
   sessionStorage: storage,
   distribution: AppDistribution.AppStore,

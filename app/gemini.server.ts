@@ -17,12 +17,12 @@ function getGeminiClient() {
     console.error("❌ GEMINI_API_KEY is missing from .env");
     throw new Error("GEMINI_API_KEY is not set.");
   }
-  
+
   // Reuse existing client if available
   if (!geminiClient) {
     geminiClient = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
   }
-  
+
   return geminiClient;
 }
 
@@ -39,8 +39,8 @@ const model = getGeminiClient().getGenerativeModel({ model: 'gemini-1.5-flash' }
  * This replaces the "Teacher" prompts with "Worker" prompts.
  */
 export async function generatePhoenixContent(productName: string, features: string[]) {
-    try {
-        const prompt = `
+  try {
+    const prompt = `
       [STRICT ACTION MODE - NO LECTURE]
       PRODUCT: ${productName}
       FEATURES: ${features.join(', ')}
@@ -56,13 +56,13 @@ export async function generatePhoenixContent(productName: string, features: stri
       
       CONSTRAINT: Do not include Meta descriptions. Do not explain your choices. Return ONLY HTML.
     `;
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        return response.text();
-    } catch (error: any) {
-        console.error("Phoenix Engine Error:", error);
-        throw new Error("Engine stalled. Check API Key or Usage Limits.");
-    }
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    return response.text();
+  } catch (error: any) {
+    console.error("Phoenix Engine Error:", error);
+    throw new Error("Engine stalled. Check API Key or Usage Limits.");
+  }
 }
 
 /**
@@ -70,13 +70,13 @@ export async function generatePhoenixContent(productName: string, features: stri
  * This generates SEO-optimized Alt-Text for your 40-product scan.
  */
 export async function generateAltText(productName: string) {
-    try {
-        const prompt = `Write a 125-character 'Answer-First' SEO alt-text for: ${productName}. No fluff.`;
-        const result = await model.generateContent(prompt);
-        return result.response.text();
-    } catch (error) {
-        return "High-quality product image for " + productName;
-    }
+  try {
+    const prompt = `Write a 125-character 'Answer-First' SEO alt-text for: ${productName}. No fluff.`;
+    const result = await model.generateContent(prompt);
+    return result.response.text();
+  } catch (error) {
+    return "High-quality product image for " + productName;
+  }
 }
 
 /**
@@ -216,5 +216,35 @@ OUTPUT: Valid JSON array ONLY.
     throw new Error(
       `Engine stalled: ${error instanceof Error ? error.message : "Unknown error"}`
     );
+  }
+}
+
+/**
+ * ignitePhoenix
+ * General purpose AI generation for the Phoenix assistant.
+ */
+export async function ignitePhoenix(prompt: string, context: string = ''): Promise<string> {
+  try {
+    const fullPrompt = `Role: Shopify Merchant Co-Pilot.\nContext: ${context}\n\nUser Query: ${prompt}`;
+    const result = await model.generateContent(fullPrompt);
+    return result.response.text();
+  } catch (error) {
+    console.error('Phoenix Ignition Failed:', error);
+    throw new Error('AI Service temporarily unavailable.');
+  }
+}
+
+/**
+ * analyzeProductData
+ * specialized function for bulk analysis and optimization routes.
+ */
+export async function analyzeProductData(productJson: any, strategy: string = 'conversion'): Promise<string> {
+  try {
+    const prompt = `Analyze the following Shopify product data focusing on a "${strategy}" strategy.\n\nProduct Data: ${JSON.stringify(productJson)}\n\nOutput format: JSON with keys "score" (1-100), "improvements" (array of strings), and "seo_title_suggestion".`;
+    const result = await model.generateContent(prompt);
+    return result.response.text();
+  } catch (error) {
+    console.error('Product Analysis Error:', error);
+    return JSON.stringify({ error: 'Analysis failed', score: 0 });
   }
 }
