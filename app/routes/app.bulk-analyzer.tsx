@@ -359,7 +359,7 @@ export default function BulkAnalyzer() {
                       <Checkbox
                         label="Apply Optimized Tags (Warning: May affect collections)"
                         checked={applyTags}
-                        onChange={setApplyTags}
+                        onChange={(val) => setApplyTags(val)}
                       />
                     </div>
                   )}
