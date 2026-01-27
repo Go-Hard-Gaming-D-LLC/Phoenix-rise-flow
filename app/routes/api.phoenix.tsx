@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { canPerformAction, recordUsage } from "../utils/usageTracker";
 
 // Initialize with your API Key
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
@@ -9,8 +10,8 @@ const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
  * This replaces the "Teacher" prompts with "Worker" prompts.
  */
 export async function generatePhoenixContent(productName: string, features: string[]) {
-    try {
-        const prompt = `
+  try {
+    const prompt = `
       [STRICT ACTION MODE - NO LECTURE]
       PRODUCT: ${productName}
       FEATURES: ${features.join(', ')}
@@ -26,13 +27,13 @@ export async function generatePhoenixContent(productName: string, features: stri
       
       CONSTRAINT: Do not include Meta descriptions. Do not explain your choices. Return ONLY HTML.
     `;
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        return response.text();
-    } catch (error: any) {
-        console.error("Phoenix Engine Error:", error);
-        throw new Error("Engine stalled. Check API Key or Usage Limits.");
-    }
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    return response.text();
+  } catch (error: any) {
+    console.error("Phoenix Engine Error:", error);
+    throw new Error("Engine stalled. Check API Key or Usage Limits.");
+  }
 }
 
 /**
@@ -40,13 +41,13 @@ export async function generatePhoenixContent(productName: string, features: stri
  * This generates SEO-optimized Alt-Text for your 40-product scan.
  */
 export async function generateAltText(productName: string) {
-    try {
-        const prompt = `Write a 125-character 'Answer-First' SEO alt-text for: ${productName}. No fluff.`;
-        const result = await model.generateContent(prompt);
-        return result.response.text();
-    } catch (error) {
-        return "High-quality product image for " + productName;
-    }
+  try {
+    const prompt = `Write a 125-character 'Answer-First' SEO alt-text for: ${productName}. No fluff.`;
+    const result = await model.generateContent(prompt);
+    return result.response.text();
+  } catch (error) {
+    return "High-quality product image for " + productName;
+  }
 }
 
 /**
@@ -59,6 +60,8 @@ interface GenerateContentParams {
   productDetails?: string;
   targetAudience?: string;
   brandContext?: string;
+  shop: string;
+  userTier: string;
 }
 
 export async function generateAIContent(params: GenerateContentParams) {
@@ -67,8 +70,21 @@ export async function generateAIContent(params: GenerateContentParams) {
     songTitle,
     productDetails,
     targetAudience = "general audience",
-    brandContext = "your brand"
+    brandContext = "your brand",
+    shop,
+    userTier
   } = params;
+
+  // Map to Usage Tracker action types
+  let actionType: 'description' | 'ad' | 'music_video' = 'description';
+  if (contentType === 'music_video') actionType = 'music_video';
+  if (contentType === 'product_ad') actionType = 'ad';
+
+  // 1. Check Rate Limits / Quotas
+  const permission = await canPerformAction(shop, userTier, actionType);
+  if (!permission.allowed) {
+    throw new Error(`Rate Limit Exceeded: ${permission.reason}`);
+  }
 
   let prompt = "";
 
@@ -174,6 +190,13 @@ OUTPUT: Valid JSON array ONLY.
       .trim();
 
     const content = JSON.parse(responseText);
+
+    // 2. Record Usage
+    await recordUsage(shop, actionType, {
+      contentType,
+      itemCount: Array.isArray(content) ? content.length : 1,
+      productDetails: productDetails?.substring(0, 50)
+    });
 
     return {
       success: true,
