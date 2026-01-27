@@ -1,0 +1,7 @@
+app/entry.server.tsx(9,10): error TS2614: Module '"./shopify.server"' has no exported member 'addDocumentResponseHeaders'. Did you mean to use 'import addDocumentResponseHeaders from "./shopify.server"' instead?
+app/routes/api.blog-optimizer.tsx(3,29): error TS2307: Cannot find module '@google/genai' or its corresponding type declarations.
+app/routes/api.bulk-analyze.tsx(90,27): error TS2353: Object literal may only specify known properties, and 'responseMimeType' does not exist in type 'GenerationConfig'.
+app/routes/api.bulk-analyze.tsx(114,13): error TS2353: Object literal may only specify known properties, and 'processingTimeMs' does not exist in type '(Without<OptimizationHistoryCreateInput, OptimizationHistoryUncheckedCreateInput> & OptimizationHistoryUncheckedCreateInput) | (Without<...> & OptimizationHistoryCreateInput)'.
+app/routes/api.bulk-analyze.tsx(130,13): error TS2353: Object literal may only specify known properties, and 'errorMessage' does not exist in type '(Without<OptimizationHistoryCreateInput, OptimizationHistoryUncheckedCreateInput> & OptimizationHistoryUncheckedCreateInput) | (Without<...> & OptimizationHistoryCreateInput)'.
+app/routes/api.executive-burst.tsx(4,29): error TS2307: Cannot find module '@google/genai' or its corresponding type declarations.
+app/routes/auth.login/route.tsx(16,10): error TS2614: Module '"../../shopify.server"' has no exported member 'login'. Did you mean to use 'import login from "../../shopify.server"' instead?

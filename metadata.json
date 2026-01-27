@@ -1,0 +1,8 @@
+{
+  "name": "Merchant Co-Pilot Workstation",
+  "description": "Autonomous mission control for Etsy and Shopify merchants. Automated SEO audits, image backlink hunting, and high-conversion social marketing packs for Pinterest, Facebook, and TikTok.",
+  "requestFramePermissions": [
+    "geolocation"
+  ],
+  "prompt": "Autonomous multi-channel merchant parity workstation and marketing engine"
+}

@@ -1,0 +1,396 @@
+{
+  "C:/Code/merchant-co-pilot-workstation v3/app/styles/workstation.css": {
+    "file": "assets/workstation-BNwXvRHo.css",
+    "src": "C:/Code/merchant-co-pilot-workstation v3/app/styles/workstation.css"
+  },
+  "C:/Code/merchant-co-pilot-workstation v3/node_modules/@shopify/polaris/build/esm/styles.css": {
+    "file": "assets/styles-C7YjYK5e.css",
+    "src": "C:/Code/merchant-co-pilot-workstation v3/node_modules/@shopify/polaris/build/esm/styles.css"
+  },
+  "_Banner-DFT9xzSF.js": {
+    "file": "assets/Banner-DFT9xzSF.js",
+    "name": "Banner",
+    "imports": [
+      "_index-D3fv15Yl.js",
+      "_banner-context-Bl0rAjEp.js",
+      "_ButtonGroup-CesFbz1y.js",
+      "_use-is-after-initial-mount-DTj1DCv8.js"
+    ]
+  },
+  "_ButtonGroup-CesFbz1y.js": {
+    "file": "assets/ButtonGroup-CesFbz1y.js",
+    "name": "ButtonGroup",
+    "imports": [
+      "_index-D3fv15Yl.js",
+      "_use-is-after-initial-mount-DTj1DCv8.js"
+    ]
+  },
+  "_Layout-CfeWuKp7.js": {
+    "file": "assets/Layout-CfeWuKp7.js",
+    "name": "Layout",
+    "imports": [
+      "_index-D3fv15Yl.js",
+      "_ButtonGroup-CesFbz1y.js"
+    ]
+  },
+  "_List-CHgGNzLr.js": {
+    "file": "assets/List-CHgGNzLr.js",
+    "name": "List",
+    "imports": [
+      "_index-D3fv15Yl.js",
+      "_ButtonGroup-CesFbz1y.js"
+    ]
+  },
+  "_Page-Bppm3941.js": {
+    "file": "assets/Page-Bppm3941.js",
+    "name": "Page",
+    "imports": [
+      "_index-D3fv15Yl.js",
+      "_use-is-after-initial-mount-DTj1DCv8.js",
+      "_ButtonGroup-CesFbz1y.js",
+      "_context-B9JEiQgK.js"
+    ]
+  },
+  "_TitleBar-DFMSJ8Yc.js": {
+    "file": "assets/TitleBar-DFMSJ8Yc.js",
+    "name": "TitleBar"
+  },
+  "_banner-context-Bl0rAjEp.js": {
+    "file": "assets/banner-context-Bl0rAjEp.js",
+    "name": "banner-context",
+    "imports": [
+      "_index-D3fv15Yl.js"
+    ]
+  },
+  "_components-DF02m5MT.js": {
+    "file": "assets/components-DF02m5MT.js",
+    "name": "components",
+    "imports": [
+      "_index-D3fv15Yl.js"
+    ]
+  },
+  "_context-B9JEiQgK.js": {
+    "file": "assets/context-B9JEiQgK.js",
+    "name": "context",
+    "imports": [
+      "_index-D3fv15Yl.js",
+      "_use-is-after-initial-mount-DTj1DCv8.js"
+    ]
+  },
+  "_context-CKWczhHV.js": {
+    "file": "assets/context-CKWczhHV.js",
+    "name": "context",
+    "imports": [
+      "_index-D3fv15Yl.js"
+    ]
+  },
+  "_index-D3fv15Yl.js": {
+    "file": "assets/index-D3fv15Yl.js",
+    "name": "index"
+  },
+  "_index-S99HxTLI.js": {
+    "file": "assets/index-S99HxTLI.js",
+    "name": "index"
+  },
+  "_styles-D6mJmGND.js": {
+    "file": "assets/styles-D6mJmGND.js",
+    "name": "styles",
+    "imports": [
+      "_index-D3fv15Yl.js",
+      "_use-is-after-initial-mount-DTj1DCv8.js",
+      "_context-B9JEiQgK.js",
+      "_context-CKWczhHV.js"
+    ],
+    "assets": [
+      "assets/styles-C7YjYK5e.css"
+    ]
+  },
+  "_use-is-after-initial-mount-DTj1DCv8.js": {
+    "file": "assets/use-is-after-initial-mount-DTj1DCv8.js",
+    "name": "use-is-after-initial-mount",
+    "imports": [
+      "_index-D3fv15Yl.js"
+    ]
+  },
+  "app/root.tsx?__remix-build-client-route": {
+    "file": "assets/root-DVbfPw7i.js",
+    "name": "root",
+    "src": "app/root.tsx?__remix-build-client-route",
+    "isEntry": true,
+    "imports": [
+      "_index-D3fv15Yl.js",
+      "_components-DF02m5MT.js"
+    ],
+    "assets": [
+      "assets/workstation-BNwXvRHo.css"
+    ]
+  },
+  "app/routes/api.blog-optimizer.tsx?__remix-build-client-route": {
+    "file": "assets/api.blog-optimizer-l0sNRNKZ.js",
+    "name": "api.blog-optimizer",
+    "src": "app/routes/api.blog-optimizer.tsx?__remix-build-client-route",
+    "isEntry": true
+  },
+  "app/routes/api.bulk-analyze.tsx?__remix-build-client-route": {
+    "file": "assets/api.bulk-analyze-l0sNRNKZ.js",
+    "name": "api.bulk-analyze",
+    "src": "app/routes/api.bulk-analyze.tsx?__remix-build-client-route",
+    "isEntry": true
+  },
+  "app/routes/api.compliance-audit.tsx?__remix-build-client-route": {
+    "file": "assets/api.compliance-audit-l0sNRNKZ.js",
+    "name": "api.compliance-audit",
+    "src": "app/routes/api.compliance-audit.tsx?__remix-build-client-route",
+    "isEntry": true
+  },
+  "app/routes/api.executive-burst.tsx?__remix-build-client-route": {
+    "file": "assets/api.executive-burst-l0sNRNKZ.js",
+    "name": "api.executive-burst",
+    "src": "app/routes/api.executive-burst.tsx?__remix-build-client-route",
+    "isEntry": true
+  },
+  "app/routes/api.generate-content.ts?__remix-build-client-route": {
+    "file": "assets/api.generate-content-l0sNRNKZ.js",
+    "name": "api.generate-content",
+    "src": "app/routes/api.generate-content.ts?__remix-build-client-route",
+    "isEntry": true
+  },
+  "app/routes/api.generate-description.tsx?__remix-build-client-route": {
+    "file": "assets/api.generate-description-l0sNRNKZ.js",
+    "name": "api.generate-description",
+    "src": "app/routes/api.generate-description.tsx?__remix-build-client-route",
+    "isEntry": true
+  },
+  "app/routes/api.get-location.tsx?__remix-build-client-route": {
+    "file": "assets/api.get-location-l0sNRNKZ.js",
+    "name": "api.get-location",
+    "src": "app/routes/api.get-location.tsx?__remix-build-client-route",
+    "isEntry": true
+  },
+  "app/routes/api.inventory-sync.tsx?__remix-build-client-route": {
+    "file": "assets/api.inventory-sync-l0sNRNKZ.js",
+    "name": "api.inventory-sync",
+    "src": "app/routes/api.inventory-sync.tsx?__remix-build-client-route",
+    "isEntry": true
+  },
+  "app/routes/api.media-optimizer.tsx?__remix-build-client-route": {
+    "file": "assets/api.media-optimizer-l0sNRNKZ.js",
+    "name": "api.media-optimizer",
+    "src": "app/routes/api.media-optimizer.tsx?__remix-build-client-route",
+    "isEntry": true
+  },
+  "app/routes/api.optimizer.tsx?__remix-build-client-route": {
+    "file": "assets/api.optimizer-l0sNRNKZ.js",
+    "name": "api.optimizer",
+    "src": "app/routes/api.optimizer.tsx?__remix-build-client-route",
+    "isEntry": true
+  },
+  "app/routes/api.phoenix.tsx?__remix-build-client-route": {
+    "file": "assets/api.phoenix-CJV3L-Qf.js",
+    "name": "api.phoenix",
+    "src": "app/routes/api.phoenix.tsx?__remix-build-client-route",
+    "isEntry": true,
+    "imports": [
+      "_index-S99HxTLI.js"
+    ]
+  },
+  "app/routes/api.proxy.shopify.tsx?__remix-build-client-route": {
+    "file": "assets/api.proxy.shopify-l0sNRNKZ.js",
+    "name": "api.proxy.shopify",
+    "src": "app/routes/api.proxy.shopify.tsx?__remix-build-client-route",
+    "isEntry": true
+  },
+  "app/routes/app._index.tsx?__remix-build-client-route": {
+    "file": "assets/app._index-CJlEkK2m.js",
+    "name": "app._index",
+    "src": "app/routes/app._index.tsx?__remix-build-client-route",
+    "isEntry": true,
+    "imports": [
+      "_index-D3fv15Yl.js",
+      "_index-S99HxTLI.js",
+      "_components-DF02m5MT.js"
+    ]
+  },
+  "app/routes/app.additional.tsx?__remix-build-client-route": {
+    "file": "assets/app.additional-ByGSrM4x.js",
+    "name": "app.additional",
+    "src": "app/routes/app.additional.tsx?__remix-build-client-route",
+    "isEntry": true,
+    "imports": [
+      "_index-D3fv15Yl.js",
+      "_Page-Bppm3941.js",
+      "_TitleBar-DFMSJ8Yc.js",
+      "_Layout-CfeWuKp7.js",
+      "_ButtonGroup-CesFbz1y.js",
+      "_banner-context-Bl0rAjEp.js",
+      "_List-CHgGNzLr.js",
+      "_use-is-after-initial-mount-DTj1DCv8.js",
+      "_context-B9JEiQgK.js"
+    ]
+  },
+  "app/routes/app.audit.tsx?__remix-build-client-route": {
+    "file": "assets/app.audit-BB_dlK7K.js",
+    "name": "app.audit",
+    "src": "app/routes/app.audit.tsx?__remix-build-client-route",
+    "isEntry": true,
+    "imports": [
+      "_index-D3fv15Yl.js",
+      "_components-DF02m5MT.js",
+      "_Page-Bppm3941.js",
+      "_TitleBar-DFMSJ8Yc.js",
+      "_Layout-CfeWuKp7.js",
+      "_Banner-DFT9xzSF.js",
+      "_ButtonGroup-CesFbz1y.js",
+      "_List-CHgGNzLr.js",
+      "_use-is-after-initial-mount-DTj1DCv8.js",
+      "_context-B9JEiQgK.js",
+      "_banner-context-Bl0rAjEp.js"
+    ]
+  },
+  "app/routes/app.bulk-analyzer.tsx?__remix-build-client-route": {
+    "file": "assets/app.bulk-analyzer-Bzc7Da-c.js",
+    "name": "app.bulk-analyzer",
+    "src": "app/routes/app.bulk-analyzer.tsx?__remix-build-client-route",
+    "isEntry": true,
+    "imports": [
+      "_index-D3fv15Yl.js",
+      "_components-DF02m5MT.js",
+      "_Page-Bppm3941.js",
+      "_TitleBar-DFMSJ8Yc.js",
+      "_Layout-CfeWuKp7.js",
+      "_ButtonGroup-CesFbz1y.js",
+      "_Banner-DFT9xzSF.js",
+      "_context-B9JEiQgK.js",
+      "_use-is-after-initial-mount-DTj1DCv8.js",
+      "_context-CKWczhHV.js",
+      "_banner-context-Bl0rAjEp.js"
+    ]
+  },
+  "app/routes/app.description-generator.tsx?__remix-build-client-route": {
+    "file": "assets/app.description-generator-Dgl2UlVI.js",
+    "name": "app.description-generator",
+    "src": "app/routes/app.description-generator.tsx?__remix-build-client-route",
+    "isEntry": true,
+    "imports": [
+      "_index-D3fv15Yl.js",
+      "_components-DF02m5MT.js",
+      "_Page-Bppm3941.js",
+      "_TitleBar-DFMSJ8Yc.js",
+      "_Layout-CfeWuKp7.js",
+      "_ButtonGroup-CesFbz1y.js",
+      "_Banner-DFT9xzSF.js",
+      "_use-is-after-initial-mount-DTj1DCv8.js",
+      "_context-B9JEiQgK.js",
+      "_banner-context-Bl0rAjEp.js"
+    ]
+  },
+  "app/routes/app.onboarding.tsx?__remix-build-client-route": {
+    "file": "assets/app.onboarding-V-r3TA4K.js",
+    "name": "app.onboarding",
+    "src": "app/routes/app.onboarding.tsx?__remix-build-client-route",
+    "isEntry": true,
+    "imports": [
+      "_index-D3fv15Yl.js",
+      "_components-DF02m5MT.js",
+      "_Banner-DFT9xzSF.js",
+      "_banner-context-Bl0rAjEp.js",
+      "_ButtonGroup-CesFbz1y.js",
+      "_use-is-after-initial-mount-DTj1DCv8.js"
+    ]
+  },
+  "app/routes/app.optimizer.tsx?__remix-build-client-route": {
+    "file": "assets/app.optimizer-4g6a1TTT.js",
+    "name": "app.optimizer",
+    "src": "app/routes/app.optimizer.tsx?__remix-build-client-route",
+    "isEntry": true,
+    "imports": [
+      "_index-D3fv15Yl.js",
+      "_components-DF02m5MT.js",
+      "_Page-Bppm3941.js",
+      "_TitleBar-DFMSJ8Yc.js",
+      "_Layout-CfeWuKp7.js",
+      "_ButtonGroup-CesFbz1y.js",
+      "_Banner-DFT9xzSF.js",
+      "_List-CHgGNzLr.js",
+      "_use-is-after-initial-mount-DTj1DCv8.js",
+      "_context-B9JEiQgK.js",
+      "_banner-context-Bl0rAjEp.js"
+    ]
+  },
+  "app/routes/app.phoenix.tsx?__remix-build-client-route": {
+    "file": "assets/app.phoenix-Dijwh-HP.js",
+    "name": "app.phoenix",
+    "src": "app/routes/app.phoenix.tsx?__remix-build-client-route",
+    "isEntry": true,
+    "imports": [
+      "_index-D3fv15Yl.js",
+      "_components-DF02m5MT.js",
+      "_Page-Bppm3941.js",
+      "_Layout-CfeWuKp7.js",
+      "_Banner-DFT9xzSF.js",
+      "_ButtonGroup-CesFbz1y.js",
+      "_List-CHgGNzLr.js",
+      "_use-is-after-initial-mount-DTj1DCv8.js",
+      "_context-B9JEiQgK.js",
+      "_banner-context-Bl0rAjEp.js"
+    ]
+  },
+  "app/routes/app.tsx?__remix-build-client-route": {
+    "file": "assets/app-BgG7_DOR.js",
+    "name": "app",
+    "src": "app/routes/app.tsx?__remix-build-client-route",
+    "isEntry": true,
+    "imports": [
+      "_index-D3fv15Yl.js",
+      "_components-DF02m5MT.js",
+      "_styles-D6mJmGND.js",
+      "_use-is-after-initial-mount-DTj1DCv8.js",
+      "_context-B9JEiQgK.js",
+      "_context-CKWczhHV.js"
+    ]
+  },
+  "app/routes/auth.$.tsx?__remix-build-client-route": {
+    "file": "assets/auth._-l0sNRNKZ.js",
+    "name": "auth._",
+    "src": "app/routes/auth.$.tsx?__remix-build-client-route",
+    "isEntry": true
+  },
+  "app/routes/auth.login/route.tsx?__remix-build-client-route": {
+    "file": "assets/route-aOF6l-I3.js",
+    "name": "route",
+    "src": "app/routes/auth.login/route.tsx?__remix-build-client-route",
+    "isEntry": true,
+    "imports": [
+      "_index-D3fv15Yl.js",
+      "_styles-D6mJmGND.js",
+      "_components-DF02m5MT.js",
+      "_Page-Bppm3941.js",
+      "_ButtonGroup-CesFbz1y.js",
+      "_use-is-after-initial-mount-DTj1DCv8.js",
+      "_context-B9JEiQgK.js",
+      "_context-CKWczhHV.js"
+    ]
+  },
+  "app/routes/webhooks.app.scopes_update.tsx?__remix-build-client-route": {
+    "file": "assets/webhooks.app.scopes_update-l0sNRNKZ.js",
+    "name": "webhooks.app.scopes_update",
+    "src": "app/routes/webhooks.app.scopes_update.tsx?__remix-build-client-route",
+    "isEntry": true
+  },
+  "app/routes/webhooks.app.uninstalled.tsx?__remix-build-client-route": {
+    "file": "assets/webhooks.app.uninstalled-l0sNRNKZ.js",
+    "name": "webhooks.app.uninstalled",
+    "src": "app/routes/webhooks.app.uninstalled.tsx?__remix-build-client-route",
+    "isEntry": true
+  },
+  "node_modules/@remix-run/dev/dist/config/defaults/entry.client.tsx": {
+    "file": "assets/entry.client-CJRHvfS2.js",
+    "name": "entry.client",
+    "src": "node_modules/@remix-run/dev/dist/config/defaults/entry.client.tsx",
+    "isEntry": true,
+    "imports": [
+      "_index-D3fv15Yl.js",
+      "_components-DF02m5MT.js"
+    ]
+  }
+}
