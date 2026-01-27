@@ -1,6 +1,11 @@
+import db from "../db.server"; // FIXED: Points to correct location
+
 /**
  * PHOENIX FLOW: TIER MANAGEMENT
- * Pricing based on industry standards ($1/ad generation)
+ * Pricing Strategy:
+ * - Starter: High volume text, limited video (Profit Protected)
+ * - Pro: The "Sweet Spot" for serious merchants
+ * - Enterprise: Custom/Unlimited
  */
 
 export interface TierConfig {
@@ -10,7 +15,7 @@ export interface TierConfig {
   features: string[];
   limits: {
     descriptionsPerMonth: number;
-    adsPerMonth: number;
+    adsPerMonth: number; // 8-second clips
     musicVideosPerMonth: number;
   };
 }
@@ -35,7 +40,7 @@ export const TIERS: Record<string, TierConfig> = {
   
   starter: {
     name: "Starter",
-    price: 29, // $29/month - industry standard for basic Shopify apps
+    price: 29, // $29/month
     productsPerScan: 25,
     features: [
       'description_generator',
@@ -47,14 +52,14 @@ export const TIERS: Record<string, TierConfig> = {
     ],
     limits: {
       descriptionsPerMonth: 100,
-      adsPerMonth: 30, // ~$1/ad = $30 value included
+      adsPerMonth: 15, // Safety Limit: 15 videos
       musicVideosPerMonth: 0
     }
   },
   
   professional: {
     name: "Professional",
-    price: 79, // $79/month - mid-tier Shopify apps
+    price: 79, // $79/month
     productsPerScan: 100,
     features: [
       'description_generator',
@@ -63,20 +68,20 @@ export const TIERS: Record<string, TierConfig> = {
       'pdf_report',
       'bulk_analyzer',
       'product_ads',
-      'music_video',
+      'music_video', 
       'song_showcase',
       'priority_support'
     ],
     limits: {
       descriptionsPerMonth: 500,
-      adsPerMonth: 100, // ~$100 value included
-      musicVideosPerMonth: 10 // Premium feature
+      adsPerMonth: 100,
+      musicVideosPerMonth: 10
     }
   },
   
   enterprise: {
     name: "Enterprise",
-    price: 199, // $199/month - premium tier
+    price: 199, // $199/month
     productsPerScan: -1, // unlimited
     features: [
       'description_generator',
@@ -93,9 +98,9 @@ export const TIERS: Record<string, TierConfig> = {
       'custom_training'
     ],
     limits: {
-      descriptionsPerMonth: -1, // unlimited
-      adsPerMonth: -1, // unlimited
-      musicVideosPerMonth: -1 // unlimited
+      descriptionsPerMonth: -1, 
+      adsPerMonth: -1, 
+      musicVideosPerMonth: -1 
     }
   }
 };
@@ -144,9 +149,9 @@ export function calculateOverage(
   
   // Pricing per additional unit
   const rates = {
-    descriptionsPerMonth: 0.10, // $0.10 per extra description
-    adsPerMonth: 1.00, // $1.00 per extra ad
-    musicVideosPerMonth: 5.00 // $5.00 per extra video
+    descriptionsPerMonth: 0.10, 
+    adsPerMonth: 1.00, 
+    musicVideosPerMonth: 0.50 
   };
   
   return {
@@ -156,12 +161,25 @@ export function calculateOverage(
 }
 
 /**
- * Get user's current tier from database
+ * Get user's current tier from the database
  */
 export async function getUserTier(shop: string): Promise<string> {
-  // TODO: Query from database or Shopify billing
-  // For now, return 'free' as default
-  return 'free';
+  if (!shop) return 'free';
+
+  try {
+    const session = await db.session.findFirst({
+      where: { shop },
+    });
+
+    // @ts-ignore
+    const plan = session?.plan;
+    
+    return plan ? plan.toLowerCase() : 'free';
+
+  } catch (error) {
+    console.error("Error fetching user tier:", error);
+    return 'free';
+  }
 }
 
 /**
@@ -183,7 +201,7 @@ export function formatTierLimits(tier: TierConfig): string[] {
   }
   
   if (tier.limits.adsPerMonth > 0) {
-    limits.push(`${tier.limits.adsPerMonth} product ads/month (~$${tier.limits.adsPerMonth} value)`);
+    limits.push(`${tier.limits.adsPerMonth} video ads/month (8-second motion clips)`);
   }
   
   if (tier.limits.musicVideosPerMonth > 0) {

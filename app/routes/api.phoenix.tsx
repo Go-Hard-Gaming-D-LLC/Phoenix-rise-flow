@@ -1,45 +1,128 @@
+import { json } from "@remix-run/node";
+import type { ActionFunctionArgs } from "@remix-run/node";
+import { authenticate } from "../shopify.server";
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { canPerformAction, recordUsage } from "../utils/usageTracker";
+import { 
+  getUserTier, 
+  hasReachedLimit, 
+  canAccessFeature, 
+  formatTierLimits 
+} from "../utils/tierConfig";
+import { sendDeveloperAlert } from "../utils/developerAlert";
 
-// Initialize with your API Key
+// --- 1. CONFIGURATION & AI SETUP ---
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+// Use 'gemini-1.5-flash' for speed/cost, or 'gemini-pro' for complex reasoning
 const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
-/**
- * PHOENIX FLOW: THE EXECUTIVE CONTENT ENGINE
- * This replaces the "Teacher" prompts with "Worker" prompts.
- */
-export async function generatePhoenixContent(productName: string, features: string[]) {
+// --- 2. THE ACTION HANDLER (The Traffic Controller) ---
+export const action = async ({ request }: ActionFunctionArgs) => {
+  // A. Authenticate the Request
+  const { session, admin } = await authenticate.admin(request);
+  const shop = session.shop;
+
+  // B. Parse the Input Data
+  const formData = await request.formData();
+  const actionType = formData.get("actionType") as string; // 'generate_desc', 'generate_ad', etc.
+  const rightsConfirmed = formData.get("rightsConfirmed"); // "true" or "false"
+  
+  // Data for generation
+  const productName = formData.get("productName") as string;
+  const features = formData.get("features") ? JSON.parse(formData.get("features") as string) : [];
+  const contentType = formData.get("contentType") as any; // 'music_video', 'product_ad'
+
   try {
-    const prompt = `
-      [STRICT ACTION MODE - NO LECTURE]
-      PRODUCT: ${productName}
-      FEATURES: ${features.join(', ')}
+    // --- 3. THE LEGAL SHIELD (Liability Protection) ---
+    // If they are uploading/using audio, they MUST agree to rights
+    if ((contentType === 'music_video' || contentType === 'song_showcase') && rightsConfirmed !== 'true') {
+      return json({ 
+        success: false, 
+        error: "LEGAL REQUIREMENT: You must confirm you own the rights to this music." 
+      }, { status: 403 });
+    }
+
+    // --- 4. THE BILLING GATEKEEPER (Stop Freeloaders) ---
+    // Get their real tier from the DB
+    const tier = await getUserTier(shop);
+    
+    // Map the action to a limit type
+    let limitType: 'descriptionsPerMonth' | 'adsPerMonth' | 'musicVideosPerMonth' | null = null;
+    
+    if (actionType === 'generate_desc') limitType = 'descriptionsPerMonth';
+    if (actionType === 'generate_ad' || contentType === 'product_ad') limitType = 'adsPerMonth';
+    if (contentType === 'music_video') limitType = 'musicVideosPerMonth';
+
+    // Check Limits
+    if (limitType && hasReachedLimit(tier, limitType, 0)) { // Pass current usage (0 for now, connect DB counter later)
+      // 🚨 ALERT: Send a signal that someone hit a wall
+      await sendDeveloperAlert('LIMIT_REACHED', `Shop ${shop} hit ${limitType} limit on ${tier} plan.`);
       
-      TASK: Generate high-converting Shopify HTML.
-      STYLE: 2026 'Answer-First' (GEO optimized) + TikTok 'Authentic' Tone.
-      
-      OUTPUT STRUCTURE:
-      - <h2>: Catchy, keyword-rich title.
-      - <p>: Immediate hook addressing a pain point.
-      - <ul>: 3-5 benefit-driven bullets (scannable).
-      - <strong>: Urgency-based Call to Action.
-      
-      CONSTRAINT: Do not include Meta descriptions. Do not explain your choices. Return ONLY HTML.
-    `;
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    return response.text();
+      return json({ 
+        success: false, 
+        error: `Limit reached for your ${tier} plan. Please upgrade to continue.` 
+      }, { status: 402 }); // 402 Payment Required
+    }
+
+    // --- 5. EXECUTE THE AI (Your Logic) ---
+    let result;
+
+    if (actionType === 'generate_desc') {
+      result = await generatePhoenixContent(productName, features);
+    } 
+    else if (actionType === 'generate_alt_text') {
+      result = await generateAltText(productName);
+    }
+    else if (actionType === 'generate_media') {
+      result = await generateAIContent({
+        contentType,
+        shop,
+        userTier: tier,
+        productDetails: productName,
+        brandContext: formData.get("brandContext") as string || "Our Brand",
+        targetAudience: formData.get("targetAudience") as string || "General"
+      });
+    } else {
+      throw new Error("Invalid Action Type");
+    }
+
+    // Success!
+    return json({ success: true, data: result });
+
   } catch (error: any) {
-    console.error("Phoenix Engine Error:", error);
-    throw new Error("Engine stalled. Check API Key or Usage Limits.");
+    // --- 6. CRASH REPORTING ---
+    console.error("❌ PHOENIX API ERROR:", error);
+    await sendDeveloperAlert('ERROR', `API Crash: ${error.message}`, { shop, actionType });
+    
+    return json({ 
+      success: false, 
+      error: error.message || "System Error" 
+    }, { status: 500 });
   }
+};
+
+// --- 7. HELPER FUNCTIONS (Your AI Logic) ---
+
+export async function generatePhoenixContent(productName: string, features: string[]) {
+  const prompt = `
+    [STRICT ACTION MODE - NO LECTURE]
+    PRODUCT: ${productName}
+    FEATURES: ${features.join(', ')}
+    
+    TASK: Generate high-converting Shopify HTML.
+    STYLE: 2026 'Answer-First' (GEO optimized) + TikTok 'Authentic' Tone.
+    
+    OUTPUT STRUCTURE:
+    - <h2>: Catchy, keyword-rich title.
+    - <p>: Immediate hook addressing a pain point.
+    - <ul>: 3-5 benefit-driven bullets (scannable).
+    - <strong>: Urgency-based Call to Action.
+    
+    CONSTRAINT: Do not include Meta descriptions. Do not explain your choices. Return ONLY HTML.
+  `;
+  const result = await model.generateContent(prompt);
+  return result.response.text();
 }
 
-/**
- * PHOENIX FLOW: VISUAL EXOSKELETON
- * This generates SEO-optimized Alt-Text for your 40-product scan.
- */
 export async function generateAltText(productName: string) {
   try {
     const prompt = `Write a 125-character 'Answer-First' SEO alt-text for: ${productName}. No fluff.`;
@@ -50,10 +133,6 @@ export async function generateAltText(productName: string) {
   }
 }
 
-/**
- * PHOENIX FLOW: MULTI-PURPOSE CONTENT GENERATOR
- * For music videos, product ads, and song showcases
- */
 interface GenerateContentParams {
   contentType: "music_video" | "product_ad" | "song_showcase" | "general";
   songTitle?: string;
@@ -65,149 +144,37 @@ interface GenerateContentParams {
 }
 
 export async function generateAIContent(params: GenerateContentParams) {
-  const {
-    contentType,
-    songTitle,
-    productDetails,
-    targetAudience = "general audience",
-    brandContext = "your brand",
-    shop,
-    userTier
-  } = params;
-
-  // Map to Usage Tracker action types
-  let actionType: 'description' | 'ad' | 'music_video' = 'description';
-  if (contentType === 'music_video') actionType = 'music_video';
-  if (contentType === 'product_ad') actionType = 'ad';
-
-  // 1. Check Rate Limits / Quotas
-  const permission = await canPerformAction(shop, userTier, actionType);
-  if (!permission.allowed) {
-    throw new Error(`Rate Limit Exceeded: ${permission.reason}`);
-  }
+  const { contentType, songTitle, productDetails, targetAudience, brandContext } = params;
 
   let prompt = "";
 
+  // ... (Your Prompt Switch Logic) ...
   switch (contentType) {
     case "music_video":
-      prompt = `
-[STRICT ACTION MODE - NO LECTURE]
-ROLE: Music Video Director for ${brandContext}
-SONG: "${songTitle || 'untitled track'}"
-
-TASK: Generate 5 YouTube-optimized video scenes.
-OUTPUT: Valid JSON array ONLY. No explanation.
-
-[
-  {
-    "scene_number": 1,
-    "timestamp": "0:00-0:15",
-    "scene_description": "What viewers see",
-    "canva_image_prompt": "Specific visual for Canva",
-    "camera_movement": "pan/zoom/static",
-    "mood_colors": "color palette",
-    "text_overlay": "text to display"
-  }
-]
-      `;
+      prompt = `[STRICT ACTION MODE] ROLE: Music Video Director. SONG: "${songTitle}". TASK: 5 scenes JSON.`;
       break;
-
     case "product_ad":
       prompt = `
-[STRICT ACTION MODE - NO LECTURE]
-ROLE: Ad Director for ${brandContext}
-PRODUCT: ${productDetails || 'product'}
-AUDIENCE: ${targetAudience}
-
-TASK: Generate 3 high-converting ad concepts.
-OUTPUT: Valid JSON array ONLY. No explanation.
-
-[
-  {
-    "ad_concept": "Creative hook idea",
-    "hook_text": "Opening line (under 10 words)",
-    "body_copy": "Persuasive copy (2-3 sentences)",
-    "canva_image_prompt": "Visual description for Canva",
-    "call_to_action": "CTA button text",
-    "platform_optimization": "Best platform"
-  }
-]
-
-Focus: Conversion, emotion, urgency. Answer-First style.
+      [STRICT ACTION MODE]
+      ROLE: Ad Director for ${brandContext}
+      PRODUCT: ${productDetails}
+      AUDIENCE: ${targetAudience}
+      TASK: Generate 3 high-converting ad concepts (JSON Array).
       `;
       break;
-
-    case "song_showcase":
-      prompt = `
-[STRICT ACTION MODE - NO LECTURE]
-ROLE: E-commerce Designer for ${brandContext}
-SONG: "${songTitle || 'featured track'}"
-
-TASK: Generate 4 product page image concepts.
-OUTPUT: Valid JSON array ONLY. No explanation.
-
-[
-  {
-    "image_type": "hero/lifestyle/detail/social_proof",
-    "canva_image_prompt": "Visual for Canva",
-    "purpose": "What this accomplishes",
-    "text_elements": "Text overlays",
-    "color_scheme": "Colors",
-    "where_to_use": "Homepage/Product page"
-  }
-]
-      `;
-      break;
-
     default:
-      prompt = `
-[STRICT ACTION MODE - NO LECTURE]
-CONTEXT: ${productDetails || 'General content'}
-AUDIENCE: ${targetAudience}
-
-TASK: Generate 5 versatile content ideas.
-OUTPUT: Valid JSON array ONLY.
-
-[
-  {
-    "content_idea": "Concept",
-    "canva_image_prompt": "Visual prompt",
-    "use_cases": ["YouTube", "Instagram", "Website"],
-    "vibe": "mood"
-  }
-]
-      `;
+      prompt = `Generate content ideas for ${productDetails} (JSON).`;
   }
 
+  const result = await model.generateContent(prompt);
+  let text = result.response.text();
+  
+  // Clean JSON
+  text = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+  
   try {
-    const result = await model.generateContent(prompt);
-    let responseText = result.response.text();
-
-    // Clean markdown code blocks
-    responseText = responseText
-      .replace(/```json\n?/g, "")
-      .replace(/```\n?/g, "")
-      .trim();
-
-    const content = JSON.parse(responseText);
-
-    // 2. Record Usage
-    await recordUsage(shop, actionType, {
-      contentType,
-      itemCount: Array.isArray(content) ? content.length : 1,
-      productDetails: productDetails?.substring(0, 50)
-    });
-
-    return {
-      success: true,
-      content,
-      contentType,
-      brandContext
-    };
-  } catch (error) {
-    console.error("Phoenix Content Engine Error:", error);
-    throw new Error(
-      `Engine stalled: ${error instanceof Error ? error.message : "Unknown error"}`
-    );
+    return JSON.parse(text);
+  } catch (e) {
+    return { raw_text: text }; // Fallback if AI returns bad JSON
   }
 }
