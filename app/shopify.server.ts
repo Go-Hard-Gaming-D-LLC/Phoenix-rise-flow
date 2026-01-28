@@ -31,8 +31,9 @@ const shopify = shopifyApp({
     },
   },
   future: {
-    // ✅ FIXED: Only valid flags remain
-    v3_lineItemBilling: true,
+    // ✅ CLEANED: All graduated flags removed. 
+    // We only keep this one if your specific version needs it, 
+    // otherwise the 'future' block can eventually be empty.
     unstable_newEmbeddedAuthStrategy: true,
   },
   ...(process.env.SHOP_CUSTOM_DOMAIN

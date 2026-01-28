@@ -1,40 +1,36 @@
 import { vitePlugin as remix } from "@remix-run/dev";
-import { defineConfig, loadEnv } from "vite";
-import path from "path";
+import { installGlobals } from "@remix-run/node";
+import { defineConfig } from "vite";
+import tsconfigPaths from "vite-tsconfig-paths";
+
+installGlobals();
 
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, '.', '');
+  // Check if we are running in production (Vercel)
+  const isProduction = mode === "production";
+
   return {
-    server: {
+    // 1. Server Config: Only exists locally. Vercel will see 'undefined' here.
+    server: isProduction ? undefined : {
       port: 3000,
-      host: '0.0.0.0',
-      proxy: {
-        '/api/shopify': {
-          target: 'https://7f5b22-4.myshopify.com',
-          changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/api\/shopify/, ''),
-          configure: (proxy, options) => {
-            proxy.on('error', (err, req, res) => {
-              console.error('Proxy error:', err);
-            });
-          }
-        }
-      }
+      host: "localhost",
+      hmr: {
+        protocol: "ws",
+        host: "localhost",
+      },
     },
+    // 2. Plugins: Standard Remix setup
     plugins: [
       remix({
-        future: {
-          v3_fetcherPersist: true,
-          v3_relativeSplatPath: true,
-          v3_throwAbortReason: true,
-        },
+        ignoredRouteFiles: ["**/.*"],
+        // This ensures Vercel builds to the correct relative folder
+        buildDirectory: "build",
       }),
+      tsconfigPaths(),
     ],
-
-    resolve: {
-      alias: {
-        '@': path.resolve(__dirname, '.'),
-      }
-    }
+    // 3. Build: Optimization settings
+    build: {
+      assetsInlineLimit: 0,
+    },
   };
 });
