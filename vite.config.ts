@@ -6,11 +6,11 @@ import tsconfigPaths from "vite-tsconfig-paths";
 installGlobals();
 
 export default defineConfig(({ mode }) => {
-  // Check if we are running in production (Vercel)
+
   const isProduction = mode === "production";
 
   return {
-    // 1. Server Config: Only exists locally. Vercel will see 'undefined' here.
+
     server: isProduction ? undefined : {
       port: 3000,
       host: "localhost",
@@ -19,16 +19,15 @@ export default defineConfig(({ mode }) => {
         host: "localhost",
       },
     },
-    // 2. Plugins: Standard Remix setup
     plugins: [
       remix({
         ignoredRouteFiles: ["**/.*"],
-        // This ensures Vercel builds to the correct relative folder
         buildDirectory: "build",
+        serverBuildFile: "index.js",
       }),
       tsconfigPaths(),
     ],
-    // 3. Build: Optimization settings
+
     build: {
       assetsInlineLimit: 0,
     },
