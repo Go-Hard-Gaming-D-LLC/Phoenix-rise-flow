@@ -1,3 +1,5 @@
+import polarisStyles from "@shopify/polaris/build/esm/styles.css?url";
+import workstationStyles from "./styles/workstation.css?url";
 import {
   Links,
   Meta,
@@ -7,16 +9,18 @@ import {
 } from "@remix-run/react";
 import type { LinksFunction } from "@remix-run/node";
 
-import styles from "./styles/workstation.css?url";
+// 1. ADD THE POLARIS IMPORT HERE (Vite-style)
 
 export const links: LinksFunction = () => [
-  { rel: "stylesheet", href: styles },
+  // 2. REGISTER POLARIS FIRST
+  { rel: "stylesheet", href: polarisStyles },
+  { rel: "stylesheet", href: workstationStyles },
   { rel: "stylesheet", href: "https://cdn.shopify.com/static/fonts/inter/v4/styles.css" },
 ];
 
 export default function App() {
   return (
-    <html>
+    <html lang="en">
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width,initial-scale=1" />

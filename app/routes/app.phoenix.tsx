@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { json, type LoaderFunctionArgs } from "@remix-run/node";
-import { useFetcher, useLoaderData } from '@remix-run/react';
+import { type LoaderFunctionArgs } from "@remix-run/node";import { useFetcher, useLoaderData } from '@remix-run/react';
 import { Page, Layout, Card, Text, TextField, Button, BlockStack, Banner, Box, List } from '@shopify/polaris';
 import shopify from "../shopify.server";
 
@@ -22,7 +21,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     `);
     
     const { data } = await response.json();
-    return json({ products: data.products.nodes });
+    return { products: data.products.nodes };
 };
 
 export default function PhoenixFlow() {

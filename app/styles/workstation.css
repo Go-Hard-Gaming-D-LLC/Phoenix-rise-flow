@@ -157,6 +157,7 @@ body {
     letter-spacing: 0.02em;
     background: linear-gradient(135deg, #fff 0%, #ccc 100%);
     -webkit-background-clip: text;
+    background-clip: text; /* Add this standard property */
     -webkit-text-fill-color: transparent;
 }
 
@@ -327,7 +328,8 @@ body {
     line-height: 1.1;
     background: linear-gradient(to right, #fff, #aaa);
     -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+  background-clip: text; /* Add this standard property */
+  -webkit-text-fill-color: transparent;
 }
 
 .board-header p {
