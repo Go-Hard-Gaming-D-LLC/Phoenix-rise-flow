@@ -31,8 +31,7 @@ const shopify = shopifyApp({
     },
   },
   future: {
-    // REMOVED outdated flag: v3_webhookAdminContext
-    v3_authenticatePublic: true,
+    // ✅ FIXED: Only valid flags remain
     v3_lineItemBilling: true,
     unstable_newEmbeddedAuthStrategy: true,
   },
