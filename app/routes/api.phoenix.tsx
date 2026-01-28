@@ -1,17 +1,16 @@
-import { json } from "@remix-run/node";
-import type { ActionFunctionArgs } from "@remix-run/node";
+import { json, type ActionFunctionArgs } from "@vercel/remix";
 import { authenticate } from "../shopify.server";
-import { 
-  getUserTier, 
-  hasReachedLimit 
+import {
+  getUserTier,
+  hasReachedLimit
 } from "../utils/tierConfig";
 import { sendDeveloperAlert } from "../utils/developerAlert";
 // ✅ IMPORT THE BRAIN
-import { 
-  generatePhoenixContent, 
-  generateAltText, 
+import {
+  generatePhoenixContent,
+  generateAltText,
   generateAIContent,
-  ignitePhoenix 
+  ignitePhoenix
 } from "../gemini.server";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -39,7 +38,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     let limitType: any = null;
     if (actionType === 'generate_desc') limitType = 'descriptionsPerMonth';
     if (actionType === 'generate_ad' || contentType === 'product_ad') limitType = 'adsPerMonth';
-    
+
     if (limitType && hasReachedLimit(tier, limitType, 0)) {
       // 🚨 Soft Alert: Log it, but don't wake the developer up at 3AM
       console.warn(`[Limit Reached] Shop ${shop} hit ${limitType} limit.`);
@@ -51,7 +50,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
     if (actionType === 'generate_desc') {
       result = await generatePhoenixContent(productName, features);
-    } 
+    }
     else if (actionType === 'generate_alt_text') {
       result = await generateAltText(productName);
     }
@@ -75,13 +74,13 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         }
       `);
       const shopData = await graphqlResponse.json();
-      
+
       const prompt = `
         [STRICT JSON ANALYST]
         Analyze this shop data: ${JSON.stringify(shopData)}
         Return JSON with "brandIdentity" (summary, usp) and "trustAudit" (policy gaps).
       `;
-      
+
       const rawText = await ignitePhoenix(prompt, "Senior Data Analyst");
       const cleanText = rawText.replace(/```json|```/g, "").trim();
       result = JSON.parse(cleanText);
@@ -96,28 +95,28 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     console.error("❌ PHOENIX API ERROR:", error);
 
     // --- 3. ROBUST ERROR HANDLING (The Shock Absorber) ---
-    
+
     // Check for Rate Limits (429) or Specific "Usage Limits" error from our brain file
-    const isRateLimit = 
-        error.status === 429 || 
-        error.message?.includes("429") || 
-        error.message?.includes("quota") ||
-        error.message?.includes("Usage Limits"); // Matches the error thrown in gemini.server.ts
+    const isRateLimit =
+      error.status === 429 ||
+      error.message?.includes("429") ||
+      error.message?.includes("quota") ||
+      error.message?.includes("Usage Limits"); // Matches the error thrown in gemini.server.ts
 
     if (isRateLimit) {
-        console.warn(`[Gemini Rate Limit] Shop ${shop} is hitting the ceiling.`);
-        return json({ 
-            success: false, 
-            error: "⚠️ High Traffic: The AI is currently overwhelmed. Please try again in 30 seconds." 
-        }, { status: 429 });
+      console.warn(`[Gemini Rate Limit] Shop ${shop} is hitting the ceiling.`);
+      return json({
+        success: false,
+        error: "⚠️ High Traffic: The AI is currently overwhelmed. Please try again in 30 seconds."
+      }, { status: 429 });
     }
 
     // For real crashes, alert the dev
     await sendDeveloperAlert('ERROR', `API Crash: ${error.message}`, { shop, actionType });
-    
-    return json({ 
-      success: false, 
-      error: error.message || "System Error" 
+
+    return json({
+      success: false,
+      error: error.message || "System Error"
     }, { status: 500 });
   }
 };
