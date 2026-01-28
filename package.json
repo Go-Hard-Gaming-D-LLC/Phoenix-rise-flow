@@ -4,13 +4,16 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev",
-    "postinstall": "prisma generate",
-    "shopify": "shopify"
+  "dev": "shopify app dev",
+  "build": "remix vite:build",
+  "start": "shopify app serve",
+  "preview": "vite preview",
+  "prisma:generate": "prisma generate",
+  "prisma:migrate": "prisma migrate dev",
+  "postinstall": "prisma generate",
+  "shopify": "shopify",
+  "typecheck": "tsc"
+}
   },
   "engines": {
     "node": ">=20.19 <22 || >=22.12"
