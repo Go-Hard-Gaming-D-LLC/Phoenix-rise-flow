@@ -272,3 +272,46 @@ export async function analyzeProductData(productData: any) {
     });
   }
 }
+/**
+ * PHOENIX FLOW: SCHEMA SHIELD (JSON-LD Generator)
+ * This generates the invisible code that stops "Schema" spam emails.
+ * It creates Google Rich Snippets for products automatically.
+ */
+export async function generateJSONLD(productName: string, price: string, currency: string = "USD") {
+  const prompt = `
+    [STRICT CODE MODE]
+    TASK: Generate valid Shopify JSON-LD (Schema.org) script for a product.
+    PRODUCT: ${productName}
+    PRICE: ${price} ${currency}
+    AVAILABILITY: In Stock
+    
+    REQUIREMENTS:
+    - Context: https://schema.org/
+    - Type: Product
+    - Include: "offers" (price, currency, availability)
+    - Include: placeholder "aggregateRating" (4.8 stars, 12 reviews) to boost CTR.
+    
+    OUTPUT: JSON ONLY. No markdown. No explanations.
+  `;
+
+  try {
+    // Reuse the existing singleton client
+    const client = getGeminiClient(); 
+    const model = client.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    
+    const result = await model.generateContent(prompt);
+    let text = result.response.text();
+    
+    // Clean any markdown formatting
+    return text.replace(/```json|```/g, "").trim();
+  } catch (error) {
+    console.error("Schema Gen Error:", error);
+    // Fallback safe schema
+    return JSON.stringify({
+      "@context": "https://schema.org/",
+      "@type": "Product",
+      "name": productName,
+      "offers": { "@type": "Offer", "price": price, "priceCurrency": currency }
+    });
+  }
+}
