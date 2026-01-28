@@ -89,6 +89,8 @@ interface GenerateContentParams {
   productDetails?: string;
   targetAudience?: string;
   brandContext?: string;
+  shop?: string;
+  userTier?: string;
 }
 
 export async function generateAIContent(params: GenerateContentParams) {

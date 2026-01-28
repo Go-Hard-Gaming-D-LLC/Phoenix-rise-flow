@@ -1,7 +1,6 @@
 import { json, type ActionFunctionArgs } from "@remix-run/node";
 import shopify from "../shopify.server";
-import { generateAIContent } from "./api.phoenix";
-import { getUserTier } from "../utils/tierConfig";
+import { generateAIContent } from "../gemini.server";import { getUserTier } from "../utils/tierConfig";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
     // 1. Authenticate with Shopify
