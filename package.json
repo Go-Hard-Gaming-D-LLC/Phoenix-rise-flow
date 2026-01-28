@@ -39,6 +39,7 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@remix-run/dev": "^2.17.4",
     "@shopify/cli": "^3.88.1",
     "@shopify/theme": "^3.58.2",
     "@types/node": "^25.0.10",

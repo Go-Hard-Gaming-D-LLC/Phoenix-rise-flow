@@ -3,6 +3,8 @@ import { installGlobals } from "@remix-run/node";
 import { defineConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 
+import { netlifyPlugin } from "@netlify/remix-adapter/plugin";
+
 installGlobals();
 
 export default defineConfig(({ mode }) => {
@@ -25,6 +27,7 @@ export default defineConfig(({ mode }) => {
         buildDirectory: "build",
         serverBuildFile: "index.js",
       }),
+      netlifyPlugin(),
       tsconfigPaths(),
     ],
 
