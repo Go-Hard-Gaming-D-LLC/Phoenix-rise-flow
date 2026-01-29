@@ -2,5 +2,8 @@
   command = "npx prisma generate && npm run build"
   publish = "build/client"
 
+[build.environment]
+  SECRETS_SCAN_OMIT_KEYS = "SHOPIFY_API_KEY,SCOPES"
+
 [functions]
   directory = "netlify/functions"
