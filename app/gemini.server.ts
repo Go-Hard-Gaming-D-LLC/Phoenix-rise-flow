@@ -4,7 +4,7 @@
 //   console.error("❌ CRITICAL: GEMINI_API_KEY is missing");
 //   throw new Error("GEMINI_API_KEY must be set in environment variables");
 // }
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 
 // ============================================================
 // PART 1: THE SAFETY LAYER (Singleton Pattern)
@@ -27,8 +27,33 @@ function getGeminiClient() {
   return geminiClient;
 }
 
-// Initialize the model securely
-const model = getGeminiClient().getGenerativeModel({ model: 'gemini-1.5-flash' });
+// ============================================================
+// THE UNCHAINED CONFIGURATION
+// ============================================================
+const safetySettings = [
+  {
+    category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+    threshold: HarmBlockThreshold.BLOCK_NONE,
+  },
+  {
+    category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+    threshold: HarmBlockThreshold.BLOCK_NONE,
+  },
+  {
+    category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+    threshold: HarmBlockThreshold.BLOCK_NONE,
+  },
+  {
+    category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+    threshold: HarmBlockThreshold.BLOCK_NONE,
+  },
+];
+
+// Initialize the model securely with Pro and NO filters
+const model = getGeminiClient().getGenerativeModel({
+  model: 'gemini-1.5-pro',
+  safetySettings: safetySettings
+});
 
 
 // ============================================================
@@ -371,7 +396,10 @@ export async function generateJSONLD(productName: string, price: string, currenc
   try {
     // Reuse the existing singleton client
     const client = getGeminiClient();
-    const model = client.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = client.getGenerativeModel({
+      model: 'gemini-1.5-pro',
+      safetySettings: safetySettings
+    });
 
     const result = await model.generateContent(prompt);
     let text = result.response.text();
