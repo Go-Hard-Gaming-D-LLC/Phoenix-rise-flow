@@ -21,21 +21,34 @@ export default function Index() {
   const [analysis, setAnalysis] = useState<any>({});
   const [editorInput, setEditorInput] = useState("");
   const [editorGoal, setEditorGoal] = useState("trust");
-  
+
   // --- NEW STATE: MEDIA STUDIO & LEGAL SHIELD ---
   const [legalAgreed, setLegalAgreed] = useState(false);
-  const [mediaType, setMediaType] = useState("product_ad"); 
+  const [mediaType, setMediaType] = useState("product_ad");
   const [productName, setProductName] = useState("");
 
   // --- CLIENT-SIDE AI (Text) ---
-  const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  const [genAI, setGenAI] = useState<GoogleGenerativeAI | null>(null);
+
+  useEffect(() => {
+    if (apiKey) {
+      try {
+        setGenAI(new GoogleGenerativeAI(apiKey));
+      } catch (e) {
+        console.error("Failed to initialize Google AI:", e);
+      }
+    }
+  }, [apiKey]);
 
   const runAction = async (type: 'identity' | 'audit' | 'editor') => {
+    if (!genAI) return alert("AI Service is causing an initialization error (Missing Key). check console.");
     if (type !== 'editor' && !config.shopifyUrl) return alert("Please enter a Shop URL first.");
+
     setLoading(prev => ({ ...prev, [type]: true }));
 
     try {
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
       let prompt = "";
       if (type === 'identity') prompt = `Analyze ${config.shopifyUrl}. JSON: { "summary": "...", "targetAudience": "...", "usp": "..." }`;
       if (type === 'audit') prompt = `Audit ${config.shopifyUrl} for Trust/Compliance. JSON: { "trustAudit": [{ "issue": "...", "recommendation": "..." }] }`;
@@ -94,10 +107,10 @@ export default function Index() {
       <div className="mission-control-layout">
         {/* SIDEBAR */}
         <aside className="config-sidebar">
-          <h3 style={{color: 'white', fontFamily: 'Outfit'}}>⚡ Phoenix Flow</h3>
+          <h3 style={{ color: 'white', fontFamily: 'Outfit' }}>⚡ Phoenix Flow</h3>
           <div className="input-row">
             <label>Store URL</label>
-            <input value={config.shopifyUrl} onChange={e => setConfig({...config, shopifyUrl: e.target.value})} placeholder="https://..." />
+            <input value={config.shopifyUrl} onChange={e => setConfig({ ...config, shopifyUrl: e.target.value })} placeholder="https://..." />
           </div>
           <button className="prime-btn" onClick={() => runAction('identity')} disabled={loading.identity}>
             {loading.identity ? "Analyzing..." : "✨ Detect Identity"}
@@ -107,7 +120,7 @@ export default function Index() {
         {/* MAIN BOARD */}
         <main className="mission-board">
           <header className="board-header">
-            <h1 style={{color: 'white', margin: 0}}>Merchant Co-Pilot</h1>
+            <h1 style={{ color: 'white', margin: 0 }}>Merchant Co-Pilot</h1>
           </header>
 
           <div className="action-panel-grid">
@@ -116,25 +129,25 @@ export default function Index() {
               <p>Scan for Google compliance issues.</p>
               <button className="prime-btn" onClick={() => runAction('audit')} disabled={loading.audit}>Run Audit</button>
             </div>
-            
+
             <div className="action-card">
               <h3>📝 Smart Editor</h3>
               <p>Rewrite text for SEO or Trust.</p>
-              <button className="prime-btn" onClick={() => document.getElementById('editor')?.scrollIntoView({behavior: 'smooth'})}>Open Editor</button>
+              <button className="prime-btn" onClick={() => document.getElementById('editor')?.scrollIntoView({ behavior: 'smooth' })}>Open Editor</button>
             </div>
 
             {/* MEDIA STUDIO CARD */}
             <div className="action-card" style={{ borderColor: '#a78bfa' }}>
               <h3>🎬 Media Studio</h3>
               <p>Generate Viral Ads & Music Videos.</p>
-              <button className="prime-btn" onClick={() => document.getElementById('media-studio')?.scrollIntoView({behavior: 'smooth'})}>Open Studio</button>
+              <button className="prime-btn" onClick={() => document.getElementById('media-studio')?.scrollIntoView({ behavior: 'smooth' })}>Open Studio</button>
             </div>
           </div>
 
           {/* --- MEDIA STUDIO SECTION (WITH LEGAL SHIELD) --- */}
           <div id="media-studio" className="editor-area" style={{ border: '1px solid #a78bfa' }}>
             <h3 style={{ fontFamily: 'Outfit', marginTop: 0, color: '#a78bfa' }}>Phoenix Media Studio</h3>
-            
+
             <fetcher.Form method="post" action="/api/phoenix">
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                 <div className="input-row">
@@ -152,24 +165,24 @@ export default function Index() {
 
               <input type="hidden" name="actionType" value="generate_media" />
               <input type="hidden" name="brandContext" value={config.brandName || "My Brand"} />
-              
+
               {/* ✅ THE LEGAL SHIELD (CHECKBOX) IS HERE ✅ */}
               <div className="legal-shield">
                 <label>
-                  <input 
-                    type="checkbox" 
-                    name="rightsConfirmed" 
-                    value="true" 
-                    checked={legalAgreed} 
+                  <input
+                    type="checkbox"
+                    name="rightsConfirmed"
+                    value="true"
+                    checked={legalAgreed}
                     onChange={(e) => setLegalAgreed(e.target.checked)}
                   />
                   <span>I certify that I own the commercial rights to any music/audio used here.</span>
                 </label>
               </div>
 
-              <button 
-                className="prime-btn" 
-                type="submit" 
+              <button
+                className="prime-btn"
+                type="submit"
                 disabled={!legalAgreed || fetcher.state === "submitting"}
                 style={{ opacity: !legalAgreed ? 0.5 : 1 }}
               >
