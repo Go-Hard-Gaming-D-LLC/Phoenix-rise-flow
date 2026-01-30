@@ -39,27 +39,45 @@ const model = getGeminiClient().getGenerativeModel({ model: 'gemini-1.5-flash' }
  * PHOENIX FLOW: THE EXECUTIVE CONTENT ENGINE
  * This replaces the "Teacher" prompts with "Worker" prompts.
  */
-export async function generatePhoenixContent(productName: string, features: string[]) {
+export async function generatePhoenixContent(productName: string, features: string[], context?: any) {
   try {
+    const { brandName, identitySummary, targetAudience, usp } = context || {};
+
     const prompt = `
-      [STRICT ACTION MODE - NO LECTURE]
+      [STRICT ELITE-LEVEL SEO & GEO SYSTEM PROMPT]
+      ROLE: Master Conversion Copywriter & SEO Specialist for ${brandName || "a high-end brand"}.
+      
+      AUDIENCE: ${targetAudience || "Quality-conscious shoppers"}
+      BRAND IDENTITY: ${identitySummary || "Modern and authentic"}
+      USP: ${usp || "Premium quality and design"}
+      
       PRODUCT: ${productName}
-      FEATURES: ${features.join(', ')}
+      KEY FEATURES: ${features.join(', ')}
       
-      TASK: Generate high-converting Shopify HTML.
-      STYLE: 2026 'Answer-First' (GEO optimized) + TikTok 'Authentic' Tone.
+      TASK: Generate elite-level, GEO-optimized (Generative Engine Optimization) product content for Shopify.
       
-      OUTPUT STRUCTURE:
-      - <h2>: Catchy, keyword-rich title.
-      - <p>: Immediate hook addressing a pain point.
-      - <ul>: 3-5 benefit-driven bullets (scannable).
-      - <strong>: Urgency-based Call to Action.
+      CORE STRATEGY:
+      1. 'Answer-First' Logic: Address the user's primary intent in the first 15 words.
+      2. Semantic Hierarchy: Use HTML tags for structured data parsing by AI search engines.
+      3. Trust Signals: Use an authoritative, expert tone.
       
-      CONSTRAINT: Do not include Meta descriptions. Do not explain your choices. Return ONLY HTML.
+      OUTPUT STRUCTURE (HTML ONLY):
+      - <h2>: A semantic title using the primary keyword "${productName}".
+      - <p class="hook">: A high-impact opening that solves a pain point for ${targetAudience || "the customer"}.
+      - <div class="benefits">: 
+          <h3>Why This Matters</h3>
+          <ul>
+            <li>(Benefit 1: Focus on how a feature solves a problem)</li>
+            <li>(Benefit 2: Emotional connection)</li>
+            <li>(Benefit 3: Technical superiority/USP)</li>
+          </ul>
+      - <strong>: A friction-free, urgency-based Call to Action.
+      
+      CONSTRAINT: DO NOT include any meta-talk, explanations, or Markdown blocks. Return ONLY the raw HTML string.
     `;
     const result = await model.generateContent(prompt);
     const response = await result.response;
-    return response.text();
+    return response.text().replace(/```html|```/g, "").trim();
   } catch (error: any) {
     console.error("Phoenix Engine Error:", error);
     throw new Error("Engine stalled. Check API Key or Usage Limits.");
@@ -70,11 +88,23 @@ export async function generatePhoenixContent(productName: string, features: stri
  * PHOENIX FLOW: VISUAL EXOSKELETON
  * This generates SEO-optimized Alt-Text for your 40-product scan.
  */
-export async function generateAltText(productName: string) {
+export async function generateAltText(productName: string, brandContext?: string) {
   try {
-    const prompt = `Write a 125-character 'Answer-First' SEO alt-text for: ${productName}. No fluff.`;
+    const prompt = `
+      [SEO ALT-TEXT ENGINE]
+      TASK: Write a 125-character 'Answer-First' SEO alt-text for ${productName}.
+      CONTEXT: ${brandContext || "E-commerce product"}
+      
+      RULES:
+      1. NO 'image of' or 'picture of'.
+      2. Lead with the most important subject.
+      3. Include functional context.
+      4. Max 125 characters for accessibility standards.
+      
+      OUTPUT: Single plain text string.
+    `;
     const result = await model.generateContent(prompt);
-    return result.response.text();
+    return result.response.text().trim();
   } catch (error) {
     return "High-quality product image for " + productName;
   }
@@ -85,11 +115,13 @@ export async function generateAltText(productName: string) {
  * For music videos, product ads, and song showcases
  */
 interface GenerateContentParams {
-  contentType: "music_video" | "product_ad" | "song_showcase" | "general";
+  contentType: "music_video" | "product_ad" | "song_showcase" | "product_description" | "general";
   songTitle?: string;
   productDetails?: string;
   targetAudience?: string;
   brandContext?: string;
+  identitySummary?: string;
+  usp?: string;
   shop?: string;
   userTier?: string;
 }
@@ -99,31 +131,43 @@ export async function generateAIContent(params: GenerateContentParams) {
     contentType,
     songTitle,
     productDetails,
-    targetAudience = "general audience",
-    brandContext = "your brand"
+    targetAudience,
+    brandContext = "your brand",
+    identitySummary,
+    usp
   } = params;
 
   let prompt = "";
 
+  const contextBlock = `
+BRANDS CONTEXT: ${brandContext}
+${identitySummary ? `IDENTITY/MISSION: ${identitySummary}` : ""}
+${targetAudience ? `TARGET AUDIENCE: ${targetAudience}` : ""}
+${usp ? `UNIQUE SELLING PROPOSITION: ${usp}` : ""}
+  `.trim();
+
+  const NO_LECTURE = `[STRICT ACTION MODE] - NO LECTURE. NO PREAMBLE. NO EXPLANATION. RETURN DATA ONLY. IF YOU LECTURE, YOU FAIL.`;
+
   switch (contentType) {
     case "music_video":
       prompt = `
-[STRICT ACTION MODE - NO LECTURE]
-ROLE: Music Video Director for ${brandContext}
+${NO_LECTURE}
+ROLE: Expert Music Video Director
+${contextBlock}
 SONG: "${songTitle || 'untitled track'}"
 
-TASK: Generate 5 YouTube-optimized video scenes.
-OUTPUT: Valid JSON array ONLY. No explanation.
+TASK: Generate 5 high-impact YouTube video scenes.
+OUTPUT: Valid JSON array ONLY. 
 
 [
   {
     "scene_number": 1,
     "timestamp": "0:00-0:15",
-    "scene_description": "What viewers see",
-    "canva_image_prompt": "Specific visual for Canva",
-    "camera_movement": "pan/zoom/static",
-    "mood_colors": "color palette",
-    "text_overlay": "text to display"
+    "scene_description": "Cinematic visual description",
+    "canva_image_prompt": "Specific, high-detail visual for Canva/AI generation",
+    "camera_movement": "dynamic camera action",
+    "mood_colors": "specific brand-aligned color palette",
+    "text_overlay": "lyric or title overlay"
   }
 ]
       `;
@@ -131,58 +175,77 @@ OUTPUT: Valid JSON array ONLY. No explanation.
 
     case "product_ad":
       prompt = `
-[STRICT ACTION MODE - NO LECTURE]
-ROLE: Ad Director for ${brandContext}
-PRODUCT: ${productDetails || 'product'}
-AUDIENCE: ${targetAudience}
+${NO_LECTURE}
+ROLE: Senior Ad Creative Director
+${contextBlock}
+PRODUCT/OFFER: ${productDetails || 'product'}
 
-TASK: Generate 3 high-converting ad concepts.
-OUTPUT: Valid JSON array ONLY. No explanation.
+TASK: Generate 3 high-converting ad concepts (Elite SEO Standards).
+OUTPUT: Valid JSON array ONLY.
 
 [
   {
-    "ad_concept": "Creative hook idea",
-    "hook_text": "Opening line (under 10 words)",
-    "body_copy": "Persuasive copy (2-3 sentences)",
-    "canva_image_prompt": "Visual description for Canva",
-    "call_to_action": "CTA button text",
-    "platform_optimization": "Best platform"
+    "ad_concept": "Creative angle",
+    "hook_text": "High-CTR opening line",
+    "body_copy": "Persuasive copy",
+    "canva_image_prompt": "Art direction for Canva",
+    "call_to_action": "CTA text",
+    "platform_optimization": "Platform strategy"
   }
 ]
-
-Focus: Conversion, emotion, urgency. Answer-First style.
       `;
       break;
 
     case "song_showcase":
       prompt = `
-[STRICT ACTION MODE - NO LECTURE]
-ROLE: E-commerce Designer for ${brandContext}
-SONG: "${songTitle || 'featured track'}"
+${NO_LECTURE}
+ROLE: Master E-commerce Visual Designer
+${contextBlock}
+SONG/PRODUCT: "${songTitle || 'featured track'}"
 
 TASK: Generate 4 product page image concepts.
-OUTPUT: Valid JSON array ONLY. No explanation.
+OUTPUT: Valid JSON array ONLY.
 
 [
   {
-    "image_type": "hero/lifestyle/detail/social_proof",
-    "canva_image_prompt": "Visual for Canva",
-    "purpose": "What this accomplishes",
+    "image_type": "lifestyle/detail/social_proof",
+    "canva_image_prompt": "Visual description",
+    "purpose": "Conversion goal",
     "text_elements": "Text overlays",
-    "color_scheme": "Colors",
-    "where_to_use": "Homepage/Product page"
+    "color_scheme": "Atmospheric colors",
+    "where_to_use": "Page location"
   }
 ]
       `;
       break;
 
+    case "product_description":
+      prompt = `
+${NO_LECTURE}
+ROLE: Conversion Copywriter & SEO Specialist
+${contextBlock}
+PRODUCT: ${productDetails || 'product'}
+
+TASK: Generate an ELITE Shopify product description (SEO/GEO optimized).
+STYLE: 'Answer-First' hierarchy.
+
+OUTPUT STRUCTURE:
+- <h2>: Semantic keyword title.
+- <p class="hook">: Immediate value-driven hook.
+- <div class="benefits"><h3>Benefits</h3><ul><li>Benefit Detail</li></ul></div>
+- <strong>: Urgency CTA.
+
+RETURN RAW HTML ONLY.
+      `;
+      break;
+
     default:
       prompt = `
-[STRICT ACTION MODE - NO LECTURE]
+${NO_LECTURE}
+${contextBlock}
 CONTEXT: ${productDetails || 'General content'}
-AUDIENCE: ${targetAudience}
 
-TASK: Generate 5 versatile content ideas.
+TASK: Generate 5 content ideas.
 OUTPUT: Valid JSON array ONLY.
 
 [
@@ -245,32 +308,42 @@ export async function ignitePhoenix(prompt: string, context: string = 'General S
  * analyzeProductData: specialized function for the Bulk Analyzer route
  * Scans product JSON for SEO and trend gaps.
  */
-export async function analyzeProductData(productData: any) {
+export async function analyzeProductData(productData: any, brandContext?: string) {
   try {
     const prompt = `
-      Analyze the following Shopify product data based on current market trends and SEO best practices.
-      Product Data: ${JSON.stringify(productData)}
+      [ELITE SEO AUDIT ENGINE]
+      ROLE: Senior Data Analyst for ${brandContext || "a professional Shopify store"}.
       
-      Output Requirements:
-      1. Identify 3 missing high-value keywords.
-      2. Rate the description effectiveness (1-10).
-      3. Suggest one demographic targeting improvement.
+      DATA: ${JSON.stringify(productData)}
       
-      Return response as valid JSON.
+      TASK: Perform a deep-scan for SEO gaps, Semantic deficiencies, and GEO trend misalignment.
+      
+      SCORING CRITERIA:
+      - Title CTR (keyword placement + length)
+      - Description Semantic quality (H-tags, Bullets, Hook)
+      - Tag Density (Shopify vs Etsy optimization)
+      
+      OUTPUT JSON FORMAT ONLY:
+      {
+        "effectiveness_score": 0-10,
+        "missing_keywords": ["keyword1", "keyword2", "keyword3"],
+        "demographic_improvement": "Strategic shift idea",
+        "semrush_insight": "One detailed observation based on Semrush standards",
+        "actionable_fix": "Specific text change recommendation"
+      }
     `;
 
-    // Using the existing model instance
     const result = await model.generateContent(prompt);
-    const response = await result.response;
-    return response.text();
+    let text = result.response.text().replace(/```json|```/g, "").trim();
+    return JSON.parse(text);
   } catch (error) {
     console.error('Product Analysis Error:', error);
-    return JSON.stringify({
+    return {
       error: 'Analysis failed',
       missing_keywords: [],
       effectiveness_score: 0,
       demographic_improvement: "N/A"
-    });
+    };
   }
 }
 /**
