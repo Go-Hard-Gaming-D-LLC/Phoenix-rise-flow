@@ -336,25 +336,26 @@ export async function ignitePhoenix(prompt: string, context: string = 'General S
 export async function analyzeProductData(productData: any, brandContext?: string) {
   try {
     const prompt = `
-      [ELITE SEO AUDIT ENGINE]
-      ROLE: Senior Data Analyst for ${brandContext || "a professional Shopify store"}.
+      [STRICT IRON PHOENIX MODE]
+      ROLE: Elite E-commerce Growth Engineer for ${brandContext || "a high-growth store"}.
       
-      DATA: ${JSON.stringify(productData)}
+      PRODUCT DATA: ${JSON.stringify(productData)}
       
-      TASK: Perform a deep-scan for SEO gaps, Semantic deficiencies, and GEO trend misalignment.
+      TASK: Generate elite-level SEO/GEO optimization for this product.
       
-      SCORING CRITERIA:
-      - Title CTR (keyword placement + length)
-      - Description Semantic quality (H-tags, Bullets, Hook)
-      - Tag Density (Shopify vs Etsy optimization)
+      OUTPUT REQUIREMENTS:
+      - optimized_title: High-CTR long-tail title.
+      - optimized_html_description: Semantic HTML (h2, p, ul) with conversion hooks.
+      - json_ld_schema: Full Product Schema.org script (valid JSON string).
+      - seoScore: Performance rating (0-10).
       
-      OUTPUT JSON FORMAT ONLY:
+      OUTPUT JSON ONLY:
       {
-        "effectiveness_score": 0-10,
-        "missing_keywords": ["keyword1", "keyword2", "keyword3"],
-        "demographic_improvement": "Strategic shift idea",
-        "semrush_insight": "One detailed observation based on Semrush standards",
-        "actionable_fix": "Specific text change recommendation"
+        "optimized_title": "...",
+        "optimized_html_description": "...",
+        "json_ld_schema": "...",
+        "seoScore": 9.8,
+        "missing_trust_signals": ["signal1", "signal2"]
       }
     `;
 
