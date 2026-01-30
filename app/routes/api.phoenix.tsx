@@ -1,53 +1,145 @@
 import { json, type ActionFunctionArgs } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
-import {
-  getUserTier,
-  hasReachedLimit
-} from "../utils/tierConfig";
+import { getUserTier, hasReachedLimit } from "../utils/tierConfig";
 import { sendDeveloperAlert } from "../utils/developerAlert";
-// ✅ IMPORT THE BRAIN
+// ✅ IMPORT THE IRON PHOENIX BRAIN
 import {
   generatePhoenixContent,
   generateAltText,
   generateAIContent,
-  ignitePhoenix
+  ignitePhoenix,
+  analyzeProductData
 } from "../gemini.server";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  // A. Authenticate
   const { session, admin } = await authenticate.admin(request);
   const shop = session.shop;
-
-  // B. Parse Inputs
-  const formData = await request.formData();
-  const actionType = formData.get("actionType") as string;
-  const rightsConfirmed = formData.get("rightsConfirmed");
-  const productName = formData.get("productName") as string;
-  const features = formData.get("features") ? JSON.parse(formData.get("features") as string) : [];
-  const contentType = formData.get("contentType") as any;
+  const contentType = request.headers.get("Content-Type") || "";
 
   try {
-    // --- 1. BILLING & LEGAL CHECKS ---
-    // Liability Check for Media
-    if ((contentType === 'music_video' || contentType === 'song_showcase') && rightsConfirmed !== 'true') {
-      return json({ success: false, error: "Legal confirmation required." }, { status: 403 });
+    // ============================================================
+    // TRAFFIC LANE 1: BULK ANALYZER (JSON DATA)
+    // ============================================================
+    if (contentType.includes("application/json")) {
+      const body = await request.json();
+      const { mode, products, context } = body;
+
+      // --- BULK MODE: SCAN ---
+      if (mode === "scan") {
+        const response = await admin.graphql(
+          `#graphql
+          query {
+            products(first: 50, query: "status:active", sortKey: CREATED_AT, reverse: true) {
+              edges {
+                node {
+                  id
+                  title
+                  descriptionHtml
+                }
+              }
+            }
+          }`
+        );
+        const data = await response.json();
+        return json({
+          success: true,
+          scannedIds: data.data.products.edges.map((e: any) => e.node.id),
+          scannedResults: data.data.products.edges.map((e: any) => ({
+            id: e.node.id,
+            title: e.node.title,
+            reasons: ["Recent Product"]
+          }))
+        });
+      }
+
+      // --- BULK MODE: ANALYZE (IRON PHOENIX) ---
+      if (mode === "analyze") {
+        const analysisResults = await Promise.all(
+          products.map(async (product: any) => {
+            // Call the Iron Phoenix Brain
+            try {
+              const aiData = await analyzeProductData(product, context);
+
+              return {
+                productId: product.productId || product.id,
+                currentTitle: product.title,
+                optimized_title: aiData.optimized_title || product.title,
+                optimized_html_description: aiData.optimized_html_description || "",
+                json_ld_schema: aiData.json_ld_schema || "{}",
+                seoScore: aiData.seoScore || 8,
+                accessibilityScore: 10,
+                flaggedIssues: aiData.missing_trust_signals || [],
+                ready: true
+              };
+            } catch (e) {
+              return {
+                productId: product.productId || product.id,
+                currentTitle: product.title,
+                optimized_title: product.title,
+                optimized_html_description: product.descriptionHtml || "<p>Analysis Failed</p>",
+                json_ld_schema: "{}",
+                seoScore: 0,
+                accessibilityScore: 0,
+                flaggedIssues: ["AI Analysis Failed"],
+                ready: false
+              };
+            }
+          })
+        );
+        return json({ success: true, results: analysisResults });
+      }
+
+      // --- BULK MODE: APPLY ---
+      if (mode === "apply") {
+        const updates = await Promise.all(
+          products.map(async (p: any) => {
+            const response = await admin.graphql(
+              `#graphql
+              mutation productUpdate($input: ProductInput!) {
+                productUpdate(input: $input) {
+                  product { id }
+                  userErrors { field message }
+                }
+              }`,
+              {
+                variables: {
+                  input: {
+                    id: p.productId,
+                    title: p.optimized_title,
+                    descriptionHtml: p.optimized_html_description + `\n\n<script type="application/ld+json">${p.json_ld_schema}</script>`
+                  }
+                }
+              }
+            );
+            return response.json();
+          })
+        );
+        return json({ success: true, updates });
+      }
     }
 
-    // Tier Limits Check
+    // ============================================================
+    // TRAFFIC LANE 2: SINGLE GENERATOR (FORM DATA)
+    // ============================================================
+    const formData = await request.formData();
+    const actionType = formData.get("actionType") as string;
+    const productName = formData.get("productName") as string;
+    const featuresAttr = formData.get("features");
+    const features = featuresAttr ? JSON.parse(featuresAttr as string) : [];
+    const contentMediaType = formData.get("contentType") as any;
+
+    // --- 1. LIMIT CHECKS ---
     const tier = await getUserTier(shop);
     let limitType: any = null;
     if (actionType === 'generate_desc') limitType = 'descriptionsPerMonth';
-    if (actionType === 'generate_ad' || contentType === 'product_ad') limitType = 'adsPerMonth';
+    if (actionType === 'generate_ad' || contentMediaType === 'product_ad') limitType = 'adsPerMonth';
 
     if (limitType && hasReachedLimit(tier, limitType, 0)) {
-      // 🚨 Soft Alert: Log it, but don't wake the developer up at 3AM
-      console.warn(`[Limit Reached] Shop ${shop} hit ${limitType} limit.`);
-      return json({ success: false, error: "Plan limit reached. Upgrade required." }, { status: 402 });
+      return json({ success: false, error: "Plan limit reached." }, { status: 402 });
     }
 
-    // --- 2. EXECUTE AI (Delegating to gemini.server.ts) ---
+    // --- 2. EXECUTE AI ---
     let result;
-
     if (actionType === 'generate_desc') {
       result = await generatePhoenixContent(productName, features);
     }
@@ -56,7 +148,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     }
     else if (actionType === 'generate_media') {
       result = await generateAIContent({
-        contentType,
+        contentType: contentMediaType,
         shop: shop,
         userTier: tier,
         productDetails: productName,
@@ -65,7 +157,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       });
     }
     else if (actionType === 'perform_scan') {
-      // ✅ DEEP SCANNER: Fetches Real Data, then asks Gemini to analyze
       const graphqlResponse = await admin.graphql(`
         query ShopScan {
           shop { name, description, primaryDomain { url } }
@@ -85,38 +176,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       const cleanText = rawText.replace(/```json|```/g, "").trim();
       result = JSON.parse(cleanText);
     }
-    else {
-      throw new Error("Invalid Action Type");
-    }
 
     return json({ success: true, data: result });
 
   } catch (error: any) {
     console.error("❌ PHOENIX API ERROR:", error);
-
-    // --- 3. ROBUST ERROR HANDLING (The Shock Absorber) ---
-
-    // Check for Rate Limits (429) or Specific "Usage Limits" error from our brain file
-    const isRateLimit =
-      error.status === 429 ||
-      error.message?.includes("429") ||
-      error.message?.includes("quota") ||
-      error.message?.includes("Usage Limits"); // Matches the error thrown in gemini.server.ts
-
-    if (isRateLimit) {
-      console.warn(`[Gemini Rate Limit] Shop ${shop} is hitting the ceiling.`);
-      return json({
-        success: false,
-        error: "⚠️ High Traffic: The AI is currently overwhelmed. Please try again in 30 seconds."
-      }, { status: 429 });
-    }
-
-    // For real crashes, alert the dev
-    await sendDeveloperAlert('ERROR', `API Crash: ${error.message}`, { shop, actionType });
-
-    return json({
-      success: false,
-      error: error.message || "System Error"
-    }, { status: 500 });
+    return json({ success: false, error: error.message || "System Error" }, { status: 500 });
   }
 };

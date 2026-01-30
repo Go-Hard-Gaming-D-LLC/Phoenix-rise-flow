@@ -114,7 +114,7 @@ export default function BulkAnalyzer() {
 
     fetcher.submit(
       analysisPayload as any,
-      { method: "POST", action: "/api/bulk-analyze", encType: "application/json" }
+      { method: "POST", action: "/api/phoenix", encType: "application/json" }
     );
   };
 
@@ -157,7 +157,7 @@ export default function BulkAnalyzer() {
                   <Button
                     onClick={() => {
                       setLoading(true);
-                      fetcher.submit({ mode: "scan" }, { method: "POST", action: "/api/bulk-analyze", encType: "application/json" });
+                      fetcher.submit({ mode: "scan" }, { method: "POST", action: "/api/phoenix", encType: "application/json" });
                     }}
                     disabled={loading}
                   >
@@ -240,7 +240,7 @@ export default function BulkAnalyzer() {
                       products: [selectedResult],
                       mode: "apply"
                     };
-                    fetcher.submit(applyPayload as any, { method: "POST", action: "/api/bulk-analyze", encType: "application/json" });
+                    fetcher.submit(applyPayload as any, { method: "POST", action: "/api/phoenix", encType: "application/json" });
                     setSelectedResult(null);
                   }}>
                     Apply Fixes
