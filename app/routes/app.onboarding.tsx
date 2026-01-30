@@ -2,8 +2,21 @@ import { useState } from "react";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { useFetcher, useLoaderData } from "@remix-run/react";
-import { Page, Box, Banner } from "@shopify/polaris";
-// Import shopify as default export
+import {
+    Page,
+    Layout,
+    Card,
+    Button,
+    BlockStack,
+    Text,
+    TextField,
+    Banner,
+    InlineStack,
+    Box,
+    Divider,
+    List
+} from "@shopify/polaris";
+import { PlusIcon, DeleteIcon, SaveIcon } from "@shopify/polaris-icons";
 import shopify from "../shopify.server";
 import db from "../db.server";
 
@@ -25,8 +38,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 export const action = async ({ request }: ActionFunctionArgs) => {
     const { session } = await shopify.authenticate.admin(request);
     const formData = await request.formData();
-    const jsonString = formData.get("jsonPayload") as string;
 
+    // Clean parsing of the JSON payload
+    const jsonString = formData.get("jsonPayload") as string;
     const payload = jsonString ? JSON.parse(jsonString) : { brandName: "", etsyUrls: [], shopifyUrls: [] };
 
     await db.configuration.upsert({
@@ -50,6 +64,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 export default function Onboarding() {
     const { config } = useLoaderData<typeof loader>();
     const fetcher = useFetcher<any>();
+
     const [brandName, setBrandName] = useState(config?.brandName || "");
     const [etsyUrls, setEtsyUrls] = useState<string[]>(config?.etsyUrls || [""]);
     const [shopifyUrls, setShopifyUrls] = useState<string[]>(config?.shopifyUrls || [""]);
@@ -57,137 +72,160 @@ export default function Onboarding() {
     const isLoading = fetcher.state === "submitting";
     const isSaved = fetcher.data?.success;
 
+    // --- HANDLERS ---
     const handleUrlChange = (type: 'etsy' | 'shopify', index: number, value: string) => {
         const newUrls = type === 'etsy' ? [...etsyUrls] : [...shopifyUrls];
         newUrls[index] = value;
-        type === 'etsy' ? setEtsyUrls(newUrls) : setShopifyUrls(newUrls);
+        if (type === 'etsy') setEtsyUrls(newUrls);
+        else setShopifyUrls(newUrls);
     };
 
     const handleAddUrl = (type: 'etsy' | 'shopify') => {
-        if (type === 'etsy') {
-            setEtsyUrls([...etsyUrls, ""]);
-        } else {
-            setShopifyUrls([...shopifyUrls, ""]);
-        }
+        if (type === 'etsy') setEtsyUrls([...etsyUrls, ""]);
+        else setShopifyUrls([...shopifyUrls, ""]);
     };
 
     const handleRemoveUrl = (type: 'etsy' | 'shopify', index: number) => {
-        if (type === 'etsy' && etsyUrls.length > 1) {
-            setEtsyUrls(etsyUrls.filter((_, i) => i !== index));
-        } else if (type === 'shopify' && shopifyUrls.length > 1) {
-            setShopifyUrls(shopifyUrls.filter((_, i) => i !== index));
+        if (type === 'etsy') {
+            if (etsyUrls.length > 1) setEtsyUrls(etsyUrls.filter((_, i) => i !== index));
+        } else {
+            if (shopifyUrls.length > 1) setShopifyUrls(shopifyUrls.filter((_, i) => i !== index));
         }
     };
 
+    const handleSave = () => {
+        const cleanEtsy = etsyUrls.filter(u => u.trim() !== "");
+        const cleanShopify = shopifyUrls.filter(u => u.trim() !== "");
+
+        fetcher.submit(
+            { jsonPayload: JSON.stringify({ brandName, etsyUrls: cleanEtsy, shopifyUrls: cleanShopify }) },
+            { method: "POST" }
+        );
+    };
+
     return (
-        <div className="mission-control-layout">
-            <div className="config-sidebar">
-                <div className="sidebar-header"><h3>Phoenix Flow</h3></div>
-                <div className="action-card">
-                    <h2>Free Tier</h2>
-                    <p>Vitals Report: <b>Ready</b></p>
-                    <p className="tier-info">• Scan up to 5 products<br/>• PDF Misrepresentation Alert<br/>• Manual policy fixes</p>
-                    <button className="download-btn">Download PDF Audit</button>
-                    <div className="upgrade-hint">
-                        <small>Upgrade to scan 10+ products</small>
-                    </div>
-                </div>
-            </div>
-
-            <div className="mission-board">
-                <header className="board-header">
-                    <h1>Business Vitals</h1>
-                    <p>Set up your store details. We'll scan for policy gaps & misrepresentation risks; you choose the fix.</p>
-                </header>
-
-                <div className="action-panel-grid">
-                    <div className="brand-identity-setup">
-                        <h2>Store Information</h2>
-                        <p className="helper-text">Enter your store details so we can scan for policy violations and misrepresentation risks.</p>
-                        
-                        <label>Store Name</label>
-                        <input 
-                            type="text" 
-                            value={brandName} 
-                            onChange={(e) => setBrandName(e.target.value)} 
-                            placeholder="e.g., My Handmade Shop" 
-                        />
-                        
-                        <div className="manual-entry-divider"><span>Etsy Store URLs</span></div>
-                        {etsyUrls.map((url, i) => (
-                            <div key={i} className="url-input-group">
-                                <input 
-                                    type="text" 
-                                    value={url} 
-                                    onChange={(e) => handleUrlChange('etsy', i, e.target.value)} 
-                                    placeholder="https://www.etsy.com/shop/example"
-                                />
-                                {etsyUrls.length > 1 && (
-                                    <button 
-                                        className="remove-btn" 
-                                        onClick={() => handleRemoveUrl('etsy', i)}
-                                        type="button"
-                                    >
-                                        ✕
-                                    </button>
-                                )}
-                            </div>
-                        ))}
-                        <button 
-                            className="add-url-btn" 
-                            onClick={() => handleAddUrl('etsy')}
-                            type="button"
-                        >
-                            + Add Etsy Store
-                        </button>
-
-                        <div className="manual-entry-divider"><span>Shopify Store URLs</span></div>
-                        {shopifyUrls.map((url, i) => (
-                            <div key={i} className="url-input-group">
-                                <input 
-                                    type="text" 
-                                    value={url} 
-                                    onChange={(e) => handleUrlChange('shopify', i, e.target.value)} 
-                                    placeholder="https://example.myshopify.com"
-                                />
-                                {shopifyUrls.length > 1 && (
-                                    <button 
-                                        className="remove-btn" 
-                                        onClick={() => handleRemoveUrl('shopify', i)}
-                                        type="button"
-                                    >
-                                        ✕
-                                    </button>
-                                )}
-                            </div>
-                        ))}
-                        <button 
-                            className="add-url-btn" 
-                            onClick={() => handleAddUrl('shopify')}
-                            type="button"
-                        >
-                            + Add Shopify Store
-                        </button>
-
-                        <button 
-                            className="prime-btn" 
-                            disabled={isLoading || !brandName} 
-                            onClick={() => fetcher.submit(
-                                { jsonPayload: JSON.stringify({ brandName, etsyUrls: etsyUrls.filter(u => u), shopifyUrls: shopifyUrls.filter(u => u) }) }, 
-                                { method: "POST" }
-                            )}
-                        >
-                            {isLoading ? "Saving..." : "Start Scan"}
-                        </button>
-
+        <Page
+            title="Mission Control"
+            subtitle="Configure your brand identity and monitoring targets."
+            primaryAction={{
+                content: isLoading ? "Saving..." : "Save Configuration",
+                onAction: handleSave,
+                loading: isLoading,
+                icon: SaveIcon,
+            }}
+        >
+            <Layout>
+                {/* --- LEFT COLUMN: SETTINGS --- */}
+                <Layout.Section>
+                    <BlockStack gap="500">
                         {isSaved && (
-                            <Banner tone="success">
-                                ✅ Store Configuration Saved. <a href="/app/audit">View your Policy Alert Report →</a>
+                            <Banner tone="success" title="Configuration Saved">
+                                <p>Your brand vitals are being tracked. <Button variant="plain" url="/app/audit">View Audit Report →</Button></p>
                             </Banner>
                         )}
-                    </div>
-                </div>
-            </div>
-        </div>
+
+                        <Card>
+                            <BlockStack gap="400">
+                                <Text variant="headingMd" as="h2">Brand Identity</Text>
+                                <TextField
+                                    label="Official Store Name"
+                                    value={brandName}
+                                    onChange={setBrandName}
+                                    placeholder="e.g. Iron Phoenix Apparel"
+                                    autoComplete="off"
+                                    helpText="This name will be used to scan for unauthorized copycats."
+                                />
+                            </BlockStack>
+                        </Card>
+
+                        <Card>
+                            <BlockStack gap="400">
+                                <Text variant="headingMd" as="h2">Monitoring Targets</Text>
+                                <Text as="p" tone="subdued">Add competitor or unauthorized URLs you want to track.</Text>
+
+                                <Box paddingBlockStart="200"><Divider /></Box>
+
+                                <BlockStack gap="300">
+                                    <Text variant="headingSm" as="h3">Etsy Stores to Monitor</Text>
+                                    {etsyUrls.map((url, i) => (
+                                        <InlineStack key={`etsy-${i}`} gap="300" wrap={false}>
+                                            <Box width="100%">
+                                                <TextField
+                                                    label="Etsy URL"
+                                                    labelHidden
+                                                    value={url}
+                                                    onChange={(val) => handleUrlChange('etsy', i, val)}
+                                                    placeholder="https://etsy.com/shop/..."
+                                                    autoComplete="off"
+                                                />
+                                            </Box>
+                                            <Button
+                                                icon={DeleteIcon}
+                                                tone="critical"
+                                                variant="plain"
+                                                onClick={() => handleRemoveUrl('etsy', i)}
+                                                disabled={etsyUrls.length === 1}
+                                            />
+                                        </InlineStack>
+                                    ))}
+                                    <Button icon={PlusIcon} variant="plain" onClick={() => handleAddUrl('etsy')}>Add Etsy URL</Button>
+                                </BlockStack>
+
+                                <Box paddingBlockStart="200"><Divider /></Box>
+
+                                <BlockStack gap="300">
+                                    <Text variant="headingSm" as="h3">Shopify Stores to Monitor</Text>
+                                    {shopifyUrls.map((url, i) => (
+                                        <InlineStack key={`shopify-${i}`} gap="300" wrap={false}>
+                                            <Box width="100%">
+                                                <TextField
+                                                    label="Shopify URL"
+                                                    labelHidden
+                                                    value={url}
+                                                    onChange={(val) => handleUrlChange('shopify', i, val)}
+                                                    placeholder="https://competitor.myshopify.com"
+                                                    autoComplete="off"
+                                                />
+                                            </Box>
+                                            <Button
+                                                icon={DeleteIcon}
+                                                tone="critical"
+                                                variant="plain"
+                                                onClick={() => handleRemoveUrl('shopify', i)}
+                                                disabled={shopifyUrls.length === 1}
+                                            />
+                                        </InlineStack>
+                                    ))}
+                                    <Button icon={PlusIcon} variant="plain" onClick={() => handleAddUrl('shopify')}>Add Shopify URL</Button>
+                                </BlockStack>
+                            </BlockStack>
+                        </Card>
+                    </BlockStack>
+                </Layout.Section>
+
+                {/* --- RIGHT COLUMN: VITALS REPORT --- */}
+                <Layout.Section variant="oneThird">
+                    <Card>
+                        <BlockStack gap="400">
+                            <Text variant="headingMd" as="h2">Phoenix Status</Text>
+
+                            <Box background="bg-surface-secondary" padding="300" borderRadius="200">
+                                <BlockStack gap="200">
+                                    <Text variant="headingSm" as="h3">Current Plan: Free Tier</Text>
+                                    <List type="bullet">
+                                        <List.Item>Scan Limit: 5 Products</List.Item>
+                                        <List.Item>PDF Audit: <Text as="span" tone="success" fontWeight="bold">Active</Text></List.Item>
+                                        <List.Item>Auto-Fix: Manual Only</List.Item>
+                                    </List>
+                                </BlockStack>
+                            </Box>
+
+                            <Button fullWidth variant="primary" tone="critical">Download PDF Audit</Button>
+                            <Text as="p" variant="bodySm" tone="subdued" alignment="center">Upgrade to Pro for 100+ Scans</Text>
+                        </BlockStack>
+                    </Card>
+                </Layout.Section>
+            </Layout>
+        </Page>
     );
 }
