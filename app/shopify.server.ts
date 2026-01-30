@@ -10,11 +10,12 @@ import { restResources } from "@shopify/shopify-api/rest/admin/2024-07";
 import db from "./db.server";
 
 const shopify = shopifyApp({
-  apiKey: process.env.SHOPIFY_API_KEY,
+  apiKey: process.env.SHOPIFY_API_KEY || "",
   apiSecretKey: process.env.SHOPIFY_API_SECRET || "",
   apiVersion: LATEST_API_VERSION,
   scopes: process.env.SCOPES?.split(","),
-  appUrl: process.env.SHOPIFY_APP_URL || process.env.HOST || "", authPathPrefix: "/auth",
+  appUrl: process.env.HOST || process.env.SHOPIFY_APP_URL || "",
+  authPathPrefix: "/auth",
   sessionStorage: new PrismaSessionStorage(db) as any,
   distribution: AppDistribution.AppStore,
   restResources,

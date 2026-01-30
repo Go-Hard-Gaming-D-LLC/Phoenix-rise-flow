@@ -17,10 +17,10 @@ import {
   TextField,
   Banner,
   Checkbox,
+  Scrollable,
 } from "@shopify/polaris";
 import { TitleBar } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
-
 declare const shopify: any;
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -28,12 +28,13 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   return null;
 };
 
+// ✅ Iron Phoenix: Elite Interface
 interface ProductAnalysis {
   productId: string;
   currentTitle: string;
-  suggestedTitle: string;
-  suggestedDescription: string; // Added field
-  suggestedTags?: string;       // Added field
+  optimized_title: string;          // Renamed from suggestedTitle
+  optimized_html_description: string; // Renamed from suggestedDescription
+  json_ld_schema: string;             // Added Schema Shield
   seoScore: number;
   accessibilityScore: number;
   flaggedIssues: string[];
@@ -48,37 +49,32 @@ interface BulkResult {
   results?: ProductAnalysis[];
   error?: string;
   scannedIds?: string[];
-  scannedResults?: any[]; // { id, title, reasons }
+  scannedResults?: any[];
 }
 
 export default function BulkAnalyzer() {
   const fetcher = useFetcher<BulkResult>();
   const [products, setProducts] = useState<string>("");
-  const [scannedDetails, setScannedDetails] = useState<any[]>([]); // Detailed audit results
+  const [scannedDetails, setScannedDetails] = useState<any[]>([]);
   const [context, setContext] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<ProductAnalysis[]>([]);
-  const [selectedResult, setSelectedResult] = useState<ProductAnalysis | null>(
-    null
-  );
-  const [applyTags, setApplyTags] = useState(false); // Default false for safety
+  const [selectedResult, setSelectedResult] = useState<ProductAnalysis | null>(null);
   const [progress, setProgress] = useState(0);
 
   const handleAnalyze = async () => {
     if (!products.trim()) {
-      alert("Please enter product IDs (comma-separated)");
+      shopify.toast.show("Please enter product IDs (comma-separated) or scan your store.", { isError: true });
       return;
     }
 
     setLoading(true);
-    setProgress(0);
+    setProgress(10);
 
-    const productIds = products
-      .split(",")
-      .map((id) => id.trim())
-      .filter((id) => id);
+    const productIds = products.split(",").map((id) => id.trim()).filter((id) => id);
 
-    // Fetch product details from Shopify
+    // ⚠️ NOTE: Client-side fetching can sometimes fail due to CORS. 
+    // Ideally, move this fetch logic to the server-side API route.
     const productDetails = await Promise.all(
       productIds.map(async (id) => {
         const response = await fetch("/admin/api/2024-01/graphql.json", {
@@ -88,20 +84,8 @@ export default function BulkAnalyzer() {
             query: `
               query {
                 product(id: "gid://shopify/Product/${id}") {
-                  id
-                  title
-                  tags
-                  description
-                  descriptionHtml
-                  images(first: 5) {
-                    edges {
-                      node {
-                        id
-                        altText
-                        src
-                      }
-                    }
-                  }
+                  id, title, tags, description, descriptionHtml
+                  images(first: 5) { edges { node { id, altText, src } } }
                 }
               }
             `,
@@ -111,12 +95,13 @@ export default function BulkAnalyzer() {
       })
     );
 
-    // Send to bulk analyzer
+    setProgress(40);
+
     const analysisPayload = {
       products: productDetails.map((p: any) => ({
         productId: p.data?.product?.id,
         title: p.data?.product?.title,
-        tags: p.data?.product?.tags, // Pass tags for translation engine
+        tags: p.data?.product?.tags,
         description: p.data?.product?.description,
         images: p.data?.product?.images?.edges?.map((edge: any) => ({
           alt: edge.node.altText,
@@ -137,12 +122,10 @@ export default function BulkAnalyzer() {
     if (fetcher.data?.results) {
       setResults(fetcher.data.results);
       setLoading(false);
+      setProgress(100);
     } else if (fetcher.data?.scannedIds) {
-      // Handle the result of the "Scan" action
       setProducts(fetcher.data.scannedIds.join(", "));
-      if (fetcher.data.scannedResults) {
-        setScannedDetails(fetcher.data.scannedResults);
-      }
+      if (fetcher.data.scannedResults) setScannedDetails(fetcher.data.scannedResults);
       setLoading(false);
       shopify.toast.show(`Loaded ${fetcher.data.scannedIds.length} priority products`);
     } else if (fetcher.data?.error) {
@@ -152,126 +135,42 @@ export default function BulkAnalyzer() {
   }, [fetcher.data]);
 
   const readyToApply = results.filter((r) => r.ready).length;
-  const needsReview = results.filter((r) => !r.ready).length;
 
   return (
     <Page>
-      <TitleBar title="Bulk Product Analyzer" />
+      <TitleBar title="Iron Phoenix: Bulk Editor" />
       <Layout>
         <Layout.Section>
           <Card>
             <BlockStack gap="400">
-              <Text variant="headingMd" as="h2">
-                Analyze Products for Accessibility & SEO
-              </Text>
-
-              {scannedDetails.length > 0 && (
-                <Banner tone="warning" title={`Audit Report: ${scannedDetails.length} Priority Items Found`}>
-                  <Box padding="200">
-                    <BlockStack gap="200">
-                      {scannedDetails.map((item: any, i) => (
-                        <Text as="p" key={i}>
-                          <strong>{item.title}</strong>: {item.reasons.join(", ")}
-                        </Text>
-                      ))}
-                    </BlockStack>
-                  </Box>
-                </Banner>
-              )}
+              <Text variant="headingMd" as="h2">Analyze & Repair Products</Text>
 
               <TextField
-                label="Product IDs (comma-separated)"
-                placeholder="gid://shopify/Product/123, gid://shopify/Product/456"
+                label="Product IDs"
+                placeholder="gid://shopify/Product/123..."
                 value={products}
                 onChange={setProducts}
                 multiline={3}
                 autoComplete="off"
-                disabled={loading} // Disable if analyzing or scanning
+                disabled={loading}
                 connectedRight={
                   <Button
                     onClick={() => {
-                      // Trigger scan 
                       setLoading(true);
-                      fetcher.submit(
-                        { mode: "scan" },
-                        { method: "POST", action: "/api/bulk-analyze", encType: "application/json" }
-                      );
+                      fetcher.submit({ mode: "scan" }, { method: "POST", action: "/api/bulk-analyze", encType: "application/json" });
                     }}
-                    variant="primary"
                     disabled={loading}
-                    loading={loading && !products}
                   >
-                    Scan Store (Auto-Load)
+                    Scan Store
                   </Button>
                 }
               />
 
-              <TextField
-                label="Strategy / Trend Context (Optional)"
-                placeholder="e.g. Trend: 'Cottagecore'. Goal: Increase organic traffic."
-                value={context}
-                onChange={setContext}
-                multiline={2}
-                autoComplete="off"
-                helpText="Context to guide the AI's analysis of these products."
-              />
+              <Button variant="primary" onClick={handleAnalyze} disabled={loading || !products.trim()}>
+                {loading ? "Analyzing..." : "Run Iron Phoenix Analysis"}
+              </Button>
 
-              <InlineStack gap="200">
-                <Button
-                  variant="primary"
-                  onClick={handleAnalyze}
-                  disabled={loading || !products.trim()}
-                >
-                  {loading ? "Analyzing..." : "Analyze Products"}
-                </Button>
-
-                {/* PHOENIX FLOW: CONTENT ENGINE */}
-                <Button
-                  tone="critical"
-                  onClick={() => {
-                    setLoading(true);
-                    fetcher.submit(
-                      {},
-                      { method: "POST", action: "/api/executive-burst" }
-                    );
-                  }}
-                  disabled={loading}
-                >
-                  🧠 CONTENT BURST (40)
-                </Button>
-
-                {/* PHOENIX FLOW: VISUAL ENGINE */}
-                <Button
-                  tone="success"
-                  onClick={() => {
-                    setLoading(true);
-                    fetcher.submit(
-                      {},
-                      { method: "POST", action: "/api/media-optimizer" }
-                    );
-                  }}
-                  disabled={loading}
-                >
-                  👁️ VISUAL BURST (40)
-                </Button>
-              </InlineStack>
-
-              {fetcher.data?.error && (
-                <div style={{ marginTop: '1rem' }}>
-                  <Banner tone="critical">
-                    <p>{fetcher.data.error}</p>
-                  </Banner>
-                </div>
-              )}
-
-              {loading && progress > 0 && (
-                <Box>
-                  <ProgressBar progress={progress} />
-                  <Text variant="bodySm" as="p">
-                    Processing {Math.round(progress * 100)}%
-                  </Text>
-                </Box>
-              )}
+              {loading && <ProgressBar progress={progress} />}
             </BlockStack>
           </Card>
         </Layout.Section>
@@ -279,49 +178,16 @@ export default function BulkAnalyzer() {
         {results.length > 0 && (
           <Layout.Section>
             <Card>
-              <BlockStack gap="400">
-                <InlineStack>
-                  <Badge tone="success">
-                    {`${readyToApply} Ready to Apply`}
-                  </Badge>
-                  <Badge tone="warning">
-                    {`${needsReview} Needs Review`}
-                  </Badge>
-                </InlineStack>
-
-                <DataTable
-                  columnContentTypes={[
-                    "text",
-                    "text",
-                    "text",
-                    "text",
-                    "text",
-                  ]}
-                  headings={[
-                    "Product",
-                    "SEO Score",
-                    "A11y Score",
-                    "Status",
-                    "Action",
-                  ]}
-                  rows={results.map((result) => [
-                    result.currentTitle.substring(0, 40),
-                    `${result.seoScore}/100`,
-                    `${result.accessibilityScore}/100`,
-                    result.ready ? (
-                      <Badge tone="success">Ready</Badge>
-                    ) : (
-                      <Badge tone="warning">Review</Badge>
-                    ),
-                    <Button
-                      variant="plain"
-                      onClick={() => setSelectedResult(result)}
-                    >
-                      Details
-                    </Button>,
-                  ])}
-                />
-              </BlockStack>
+              <DataTable
+                columnContentTypes={["text", "text", "text", "text"]}
+                headings={["Product", "Trust Score", "Status", "Action"]}
+                rows={results.map((result) => [
+                  result.currentTitle.substring(0, 30) + "...",
+                  `${result.seoScore}/10`,
+                  result.ready ? <Badge tone="success">Optimized</Badge> : <Badge tone="warning">Review</Badge>,
+                  <Button onClick={() => setSelectedResult(result)}>View Code</Button>,
+                ])}
+              />
             </Card>
           </Layout.Section>
         )}
@@ -330,85 +196,58 @@ export default function BulkAnalyzer() {
           <Modal
             open={Boolean(selectedResult)}
             onClose={() => setSelectedResult(null)}
-            title="Analysis Details"
+            title="Iron Phoenix Optimization"
+            size="large"  // ✅ FIXED: Changed 'large' to 'size="large"'
           >
-            <Box padding="400">
-              <BlockStack gap="300">
-                <div>
-                  <Text variant="headingSm" as="h3">Current Title</Text>
-                  <Text as="p">{selectedResult.currentTitle}</Text>
-                </div>
+            <Modal.Section>
+              <BlockStack gap="500">
+                <Box background="bg-surface-secondary" padding="400" borderRadius="200">
+                  <BlockStack gap="200">
+                    <Text variant="headingSm" as="h3">⚡ Optimized Title (Long-tail)</Text>
+                    <Text as="p" fontWeight="bold">{selectedResult.optimized_title}</Text>
+                  </BlockStack>
+                </Box>
 
-                <div>
-                  <Text variant="headingSm" as="h3">Suggested Title</Text>
-                  <Text as="p">{selectedResult.suggestedTitle}</Text>
-                </div>
+                <BlockStack gap="200">
+                  <Text variant="headingSm" as="h3">📱 Mobile-First HTML Description</Text>
+                  <Scrollable shadow style={{ height: '200px', border: '1px solid #ccc', padding: '10px' }}>
+                    {/* Preview the Actual HTML */}
+                    <div dangerouslySetInnerHTML={{ __html: selectedResult.optimized_html_description }} />
+                  </Scrollable>
+                  {/* ✅ FIXED: Added 'as="p"' below */}
+                  <Text variant="bodySm" tone="subdued" as="p">
+                    This HTML includes the "Trust Signals" and mobile formatting.
+                  </Text>
+                </BlockStack>
 
-                <div>
-                  <Text variant="headingSm" as="h3">Suggested Description</Text>
-                  <Box padding="200" background="bg-surface-secondary" borderRadius="200">
-                    <Text as="p" truncate>{selectedResult.suggestedDescription}</Text>
-                  </Box>
-                </div>
+                <BlockStack gap="200">
+                  <Text variant="headingSm" as="h3">🛡️ Schema Shield (JSON-LD)</Text>
+                  <TextField
+                    labelHidden
+                    label="schema"
+                    value={selectedResult.json_ld_schema}
+                    autoComplete="off"
+                    multiline={4}
+                    readOnly
+                  />
+                </BlockStack>
 
-                <div>
-                  <Text variant="headingSm" as="h3">Tags Audit</Text>
-                  <Text as="p" tone="subdued">{selectedResult.suggestedTags || "No tags found"}</Text>
-                  {selectedResult.suggestedTags && (
-                    <div style={{ marginTop: '10px' }}>
-                      <Checkbox
-                        label="Apply Optimized Tags (Warning: May affect collections)"
-                        checked={applyTags}
-                        onChange={(val) => setApplyTags(val)}
-                      />
-                    </div>
-                  )}
-                </div>
-
-                {selectedResult.flaggedIssues.length > 0 && (
-                  <div>
-                    <Text variant="headingSm" as="h3">⚠️ Flagged Issues</Text>
-                    <BlockStack gap="100">
-                      {selectedResult.flaggedIssues.map((issue, i) => (
-                        <Text key={i} as="p">• {issue}</Text>
-                      ))}
-                    </BlockStack>
-                  </div>
-                )}
-
-                <InlineStack gap="200">
-                  <Button
-                    variant="primary"
-                    disabled={!selectedResult.ready}
-                    onClick={() => {
-                      // Apply this product's changes
-                      // If user unchecked tags, remove them from payload
-                      const productToApply = { ...selectedResult };
-                      if (!applyTags) {
-                        delete productToApply.suggestedTags;
-                      }
-
-                      // Renamed payload to avoid conflicts
-                      const applyPayload = {
-                        products: [productToApply],
-                        mode: "apply"
-                      };
-
-                      fetcher.submit(
-                        applyPayload as any,
-                        { method: "POST", action: "/api/bulk-analyze", encType: "application/json" }
-                      );
-                      setSelectedResult(null);
-                    }}
-                  >
-                    Apply Changes
-                  </Button>
-                  <Button onClick={() => setSelectedResult(null)}>
-                    Close
+                <InlineStack gap="300" align="end">
+                  <Button onClick={() => setSelectedResult(null)}>Close</Button>
+                  <Button variant="primary" onClick={() => {
+                    // Submit the Apply Action
+                    const applyPayload = {
+                      products: [selectedResult],
+                      mode: "apply"
+                    };
+                    fetcher.submit(applyPayload as any, { method: "POST", action: "/api/bulk-analyze", encType: "application/json" });
+                    setSelectedResult(null);
+                  }}>
+                    Apply Fixes
                   </Button>
                 </InlineStack>
               </BlockStack>
-            </Box>
+            </Modal.Section>
           </Modal>
         )}
       </Layout>
