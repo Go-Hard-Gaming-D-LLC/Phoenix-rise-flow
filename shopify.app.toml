@@ -2,7 +2,7 @@
 
 client_id = "6b8c24699b2ba018192e65a4d19f80bd"
 name = "Phoenix Flow"
-application_url = "https://phoenix-rise-flow.vercel.app"
+application_url = "https://phoenixflow.netlify.app"
 embedded = true
 
 [build]
@@ -19,6 +19,7 @@ use_legacy_install_flow = false
 
 [auth]
 redirect_urls = [
-  "https://phoenix-rise-flow.vercel.app/auth/callback",
-  "https://phoenix-rise-flow.vercel.app/auth/shopify/callback"
+  "https://phoenixflow.netlify.app/auth/callback",
+  "https://phoenixflow.netlify.app/auth/shopify/callback",
+  "https://phoenixflow.netlify.app/api/auth/callback"
 ]
