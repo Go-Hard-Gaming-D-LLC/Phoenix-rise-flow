@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 // We use the Google GenAI SDK loaded from the CDN via importmap
-import { GoogleGenerativeAI } from "@google/genai"; 
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // --- Animated Background Component ---
 function AnimatedBackground({ gap = 60, radius = 1.2, color = "rgba(224, 187, 228, 0.1)", glowColor = "rgba(255, 209, 220, 0.5)" }) {
@@ -13,7 +13,7 @@ function AnimatedBackground({ gap = 60, radius = 1.2, color = "rgba(224, 187, 22
         const container = containerRef.current;
         if (!canvas || !container) return;
         const ctx = canvas.getContext("2d");
-        
+
         const resize = () => {
             canvas.width = container.clientWidth;
             canvas.height = container.clientHeight;
@@ -57,7 +57,7 @@ function AnimatedBackground({ gap = 60, radius = 1.2, color = "rgba(224, 187, 22
 
 // --- Icons ---
 const IconCheck = () => (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 .25a.75.75 0 0 1 .673.418L9.743 3.25l2.579.375a.75.75 0 0 1 .416 1.285l-1.867 1.82.44 2.569a.75.75 0 0 1-1.088.791L8 8.975l-2.302 1.21a.75.75 0 0 1-1.088-.79l.44-2.57-1.867-1.82a.75.75 0 0 1 .416-1.285l2.579-.375L7.327.668A.75.75 0 0 1 8 .25z"/></svg>
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 .25a.75.75 0 0 1 .673.418L9.743 3.25l2.579.375a.75.75 0 0 1 .416 1.285l-1.867 1.82.44 2.569a.75.75 0 0 1-1.088.791L8 8.975l-2.302 1.21a.75.75 0 0 1-1.088-.79l.44-2.57-1.867-1.82a.75.75 0 0 1 .416-1.285l2.579-.375L7.327.668A.75.75 0 0 1 8 .25z" /></svg>
 );
 
 // --- Main App Component ---
@@ -71,12 +71,12 @@ function App() {
         etsyUrl: ""
     });
     const [analysis, setAnalysis] = useState(null);
-    
+
     // Editor State
     const [editorOpen, setEditorOpen] = useState(false);
     const [editorGoal, setEditorGoal] = useState("trust");
     const [editorInput, setEditorInput] = useState("");
-    
+
     // Initialize Google AI
     // ⚠️ WARNING: In a real app, never put keys in frontend code. 
     // This is for local prototyping only.
@@ -99,19 +99,19 @@ function App() {
     const detectIdentity = async () => {
         const url = config.shopifyUrl || config.etsyUrl;
         if (!url) return showMessage("Please enter a URL first.");
-        
+
         setLoading(prev => ({ ...prev, identity: true }));
         try {
             const prompt = `Analyze the e-commerce storefront at ${url}. Deduce the Brand Identity in JSON format:
             { "summary": "One sentence summary", "targetAudience": "Specific ideal customer", "usp": "Unique Selling Proposition" }`;
-            
+
             const result = await model.generateContent(prompt);
             const response = result.response.text();
-            
+
             // Basic cleanup to parse JSON
             const jsonStr = response.replace(/```json|```/g, "").trim();
             const data = JSON.parse(jsonStr);
-            
+
             setAnalysis(prev => ({ ...prev, brandIdentity: data }));
             showMessage("Brand Identity Detected!");
         } catch (error) {
@@ -154,13 +154,13 @@ function App() {
     // 3. Smart Content Editor
     const runSmartEditor = async () => {
         if (!editorInput) return showMessage("Please enter some text to edit.");
-        
+
         setLoading(prev => ({ ...prev, editor: true }));
         try {
-            const context = analysis?.brandIdentity 
-                ? `Brand Context: ${analysis.brandIdentity.summary}. USP: ${analysis.brandIdentity.usp}.` 
+            const context = analysis?.brandIdentity
+                ? `Brand Context: ${analysis.brandIdentity.summary}. USP: ${analysis.brandIdentity.usp}.`
                 : "";
-                
+
             const prompt = `Act as an expert copywriter. Rewrite the following text.
             Goal: ${editorGoal} (Make it compliant, persuasive, or SEO optimized).
             ${context}
@@ -173,9 +173,9 @@ function App() {
             const text = result.response.text().replace(/```json|```/g, "").trim();
             const data = JSON.parse(text);
 
-            setAnalysis(prev => ({ 
-                ...prev, 
-                contentEdits: [data, ...(prev?.contentEdits || [])] 
+            setAnalysis(prev => ({
+                ...prev,
+                contentEdits: [data, ...(prev?.contentEdits || [])]
             }));
             showMessage("Content Rewritten!");
         } catch (error) {
@@ -189,7 +189,7 @@ function App() {
     return (
         <div className="app-container">
             <AnimatedBackground />
-            
+
             {/* Notification Toast */}
             {notification && <div className="toast">{notification}</div>}
 
@@ -199,29 +199,29 @@ function App() {
                     <div className="sidebar-header">
                         <IconCheck /> <h3>Business Vitals</h3>
                     </div>
-                    
+
                     <div className="input-group">
                         <label>Brand Name</label>
-                        <input 
-                            value={config.brandName} 
-                            onChange={(e) => updateConfig('brandName', e.target.value)} 
+                        <input
+                            value={config.brandName}
+                            onChange={(e) => updateConfig('brandName', e.target.value)}
                             placeholder="My Brand"
                         />
                     </div>
-                    
+
                     <div className="input-group">
                         <label>Shopify URL</label>
-                        <input 
-                            value={config.shopifyUrl} 
-                            onChange={(e) => updateConfig('shopifyUrl', e.target.value)} 
+                        <input
+                            value={config.shopifyUrl}
+                            onChange={(e) => updateConfig('shopifyUrl', e.target.value)}
                             placeholder="myshop.com"
                         />
                     </div>
 
                     <div className="action-row">
-                        <button 
-                            className="btn primary" 
-                            onClick={detectIdentity} 
+                        <button
+                            className="btn primary"
+                            onClick={detectIdentity}
                             disabled={loading.identity}
                         >
                             {loading.identity ? "Analyzing..." : "✨ Detect Identity"}
@@ -251,8 +251,8 @@ function App() {
                         <div className="card">
                             <h3>Trust & Compliance</h3>
                             <p>Scan for Google Merchant Center blocks.</p>
-                            <button 
-                                className="btn secondary" 
+                            <button
+                                className="btn secondary"
                                 onClick={runTrustAudit}
                                 disabled={loading.trust}
                             >
@@ -263,8 +263,8 @@ function App() {
                         <div className="card">
                             <h3>Smart Editor</h3>
                             <p>Rewrite policies and descriptions.</p>
-                            <button 
-                                className="btn secondary" 
+                            <button
+                                className="btn secondary"
                                 onClick={() => setEditorOpen(!editorOpen)}
                             >
                                 {editorOpen ? "Close Editor" : "Open Editor"}
@@ -281,14 +281,14 @@ function App() {
                                 <option value="seo">Optimize for SEO</option>
                                 <option value="sales">Boost Conversion</option>
                             </select>
-                            <textarea 
-                                value={editorInput} 
+                            <textarea
+                                value={editorInput}
                                 onChange={(e) => setEditorInput(e.target.value)}
                                 placeholder="Paste your text here..."
                                 rows={5}
                             />
-                            <button 
-                                className="btn primary" 
+                            <button
+                                className="btn primary"
                                 onClick={runSmartEditor}
                                 disabled={loading.editor}
                             >
@@ -303,7 +303,7 @@ function App() {
                             <h3>Audit Results</h3>
                             {analysis.trustAudit.map((item, i) => (
                                 <div key={i} className="result-item">
-                                    <strong style={{color: '#ff6b6b'}}>{item.issue}</strong>
+                                    <strong style={{ color: '#ff6b6b' }}>{item.issue}</strong>
                                     <p>{item.recommendation}</p>
                                 </div>
                             ))}
