@@ -7,3 +7,9 @@
 
 [functions]
   directory = "netlify/functions"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Content-Security-Policy = "frame-ancestors https://admin.shopify.com https://*.myshopify.com;"
+    X-Frame-Options = "ALLOWALL"
