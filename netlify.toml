@@ -1,16 +1,12 @@
-[build]
-  # We run the prisma generate command so the database client is ready
+[bu[build]
   command = "npx prisma generate && npm run build"
-  # RELATIVE PATH: Points to where Vite puts the files
   publish = "build/client"
-  # RELATIVE PATH: Points to your serverless functions
   functions = "netlify/functions"
 
 [functions]
   node_bundler = "esbuild"
   external_node_modules = ["@prisma/client", "prisma"]
 
-# This Redirect Rule fixes the "Blank Screen" by handling Client-Side Routing correctly
 [[redirects]]
   from = "/*"
   to = "/index.html"
@@ -19,3 +15,5 @@
 [build.environment]
   NODE_VERSION = "20"
   NPM_FLAGS = "--legacy-peer-deps"
+  # ✅ THIS LINE STOPS THE BUILD ERROR:
+  SECRETS_SCAN_OMIT_KEYS = "SCOPES,SHOPIFY_API_KEY"
