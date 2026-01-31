@@ -1,4 +1,4 @@
-[bu[build]
+[build]
   command = "npx prisma generate && npm run build"
   publish = "build/client"
   functions = "netlify/functions"
