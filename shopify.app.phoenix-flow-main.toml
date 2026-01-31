@@ -1,6 +1,6 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
-client_id = "74aaa1e85b8da0ed82e29488842aab5f"
+client_id = "ea7d669014bc192a3d3587fe2baa34a2"
 name = "Phoenix Flow Main"
 application_url = "https://phoenix-rise-flow.vercel.app"
 embedded = true
