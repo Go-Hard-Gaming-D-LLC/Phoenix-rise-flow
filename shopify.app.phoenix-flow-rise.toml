@@ -1,0 +1,22 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "ea7d669014bc192a3d3587fe2baa34a2"
+name = "Phoenix Flow Rise"
+application_url = "https://phoenixflow.netlify.app"
+embedded = true
+
+[webhooks]
+api_version = "2026-01"
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "read_files,write_files,write_inventory,read_inventory,read_legal_policies,read_locations,read_online_store_navigation,write_online_store_navigation,read_products,write_products,read_content,write_content,read_themes,write_themes"
+optional_scopes = [ ]
+use_legacy_install_flow = false
+
+[auth]
+redirect_urls = [
+  "https://phoenixflow.netlify.app/auth/callback",
+  "https://phoenixflow.netlify.app/auth/shopify/callback",
+  "https://phoenixflow.netlify.app/api/auth/callback"
+]
