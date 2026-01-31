@@ -61,6 +61,38 @@ const IconCheck = () => (
 );
 
 // --- Main App Component ---
+async function askPhoenix(productName) {
+    // 1. We call the Shopify Proxy URL (not your Netlify URL directly)
+    // Note: /apps/phoenix maps to your secure api.proxy.shopify.tsx
+    const proxyUrl = "/apps/phoenix";
+
+    try {
+        const response = await fetch(proxyUrl, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                // Shopify automatically adds the signature header here
+            },
+            body: JSON.stringify({
+                action: "generate_description",
+                context: {
+                    productName: productName,
+                    features: ["Handmade", "Organic"]
+                }
+            })
+        });
+
+        if (!response.ok) throw new Error("Proxy Error");
+
+        const data = await response.json();
+        console.log("Phoenix Says:", data.data);
+        return data.data;
+
+    } catch (error) {
+        console.error("AI Generation Failed:", error);
+    }
+}
+
 function App() {
     // State Management
     const [loading, setLoading] = useState({});
