@@ -1,15 +1,13 @@
 [build]
-  # ✅ Keep this, it is perfect
   command = "npx prisma generate && npm run build"
-  publish = "build/client" 
+  publish = "build/client"
   functions = "netlify/functions"
 
 [functions]
   node_bundler = "esbuild"
   external_node_modules = ["@prisma/client", "prisma"]
 
-# 🛑 THIS WAS THE PROBLEM. 
-# We changed "index.html" to ".netlify/functions/index"
+# ✅ THE FIX: Point to the Function, not the HTML file
 [[redirects]]
   from = "/*"
   to = "/.netlify/functions/index"
