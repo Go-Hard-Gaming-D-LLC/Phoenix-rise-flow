@@ -37,7 +37,7 @@ export const TIERS: Record<string, TierConfig> = {
       musicVideosPerMonth: 0
     }
   },
-  
+
   starter: {
     name: "Starter",
     price: 29, // $29/month
@@ -56,7 +56,7 @@ export const TIERS: Record<string, TierConfig> = {
       musicVideosPerMonth: 0
     }
   },
-  
+
   professional: {
     name: "Professional",
     price: 79, // $79/month
@@ -68,7 +68,7 @@ export const TIERS: Record<string, TierConfig> = {
       'pdf_report',
       'bulk_analyzer',
       'product_ads',
-      'music_video', 
+      'music_video',
       'song_showcase',
       'priority_support'
     ],
@@ -78,7 +78,7 @@ export const TIERS: Record<string, TierConfig> = {
       musicVideosPerMonth: 10
     }
   },
-  
+
   enterprise: {
     name: "Enterprise",
     price: 199, // $199/month
@@ -98,9 +98,9 @@ export const TIERS: Record<string, TierConfig> = {
       'custom_training'
     ],
     limits: {
-      descriptionsPerMonth: -1, 
-      adsPerMonth: -1, 
-      musicVideosPerMonth: -1 
+      descriptionsPerMonth: -1,
+      adsPerMonth: -1,
+      musicVideosPerMonth: -1
     }
   }
 };
@@ -124,10 +124,10 @@ export function hasReachedLimit(
 ): boolean {
   const tier = TIERS[userTier];
   if (!tier) return true;
-  
+
   const limit = tier.limits[limitType];
   if (limit === -1) return false; // unlimited
-  
+
   return currentUsage >= limit;
 }
 
@@ -141,19 +141,19 @@ export function calculateOverage(
 ): { overage: number; cost: number } {
   const tier = TIERS[userTier];
   if (!tier) return { overage: 0, cost: 0 };
-  
+
   const limit = tier.limits[limitType];
   if (limit === -1) return { overage: 0, cost: 0 }; // unlimited
-  
+
   const overage = Math.max(0, currentUsage - limit);
-  
+
   // Pricing per additional unit
   const rates = {
-    descriptionsPerMonth: 0.10, 
-    adsPerMonth: 1.00, 
-    musicVideosPerMonth: 0.50 
+    descriptionsPerMonth: 0.10,
+    adsPerMonth: 1.00,
+    musicVideosPerMonth: 0.50
   };
-  
+
   return {
     overage,
     cost: overage * rates[limitType]
@@ -166,6 +166,13 @@ export function calculateOverage(
 export async function getUserTier(shop: string): Promise<string> {
   if (!shop) return 'free';
 
+  // 👑 ADMIN BYPASS: Grants 'Enterprise' (Unlimited) status based on Env Var
+  // Add ADMIN_SHOPS="shop1.myshopify.com,shop2.myshopify.com" to your .env
+  const adminShops = (process.env.ADMIN_SHOPS || "").split(",").map(s => s.trim());
+  if (adminShops.includes(shop)) {
+    return 'enterprise';
+  }
+
   try {
     const session = await db.session.findFirst({
       where: { shop },
@@ -173,7 +180,7 @@ export async function getUserTier(shop: string): Promise<string> {
 
     // @ts-ignore
     const plan = session?.plan;
-    
+
     return plan ? plan.toLowerCase() : 'free';
 
   } catch (error) {
@@ -187,23 +194,23 @@ export async function getUserTier(shop: string): Promise<string> {
  */
 export function formatTierLimits(tier: TierConfig): string[] {
   const limits = [];
-  
+
   if (tier.productsPerScan === -1) {
     limits.push("Unlimited products per scan");
   } else {
     limits.push(`Scan up to ${tier.productsPerScan} products`);
   }
-  
+
   if (tier.limits.descriptionsPerMonth === -1) {
     limits.push("Unlimited AI descriptions");
   } else {
     limits.push(`${tier.limits.descriptionsPerMonth} AI descriptions/month`);
   }
-  
+
   if (tier.limits.adsPerMonth > 0) {
     limits.push(`${tier.limits.adsPerMonth} video ads/month (8-second motion clips)`);
   }
-  
+
   if (tier.limits.musicVideosPerMonth > 0) {
     if (tier.limits.musicVideosPerMonth === -1) {
       limits.push("Unlimited music videos");
@@ -211,6 +218,6 @@ export function formatTierLimits(tier: TierConfig): string[] {
       limits.push(`${tier.limits.musicVideosPerMonth} music videos/month`);
     }
   }
-  
+
   return limits;
 }
