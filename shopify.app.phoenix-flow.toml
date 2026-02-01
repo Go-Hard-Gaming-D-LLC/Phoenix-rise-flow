@@ -2,7 +2,7 @@
 
 client_id = "754341ccac733ecf4f62d1f6bd120d1e"
 name = "Product Optimization Engine"
-application_url = "https://phoenix-rise-flow.vercel.app"
+application_url = "https://phoenixflow.netlify.app"
 embedded = true
 
 [webhooks]
@@ -16,7 +16,7 @@ use_legacy_install_flow = false
 
 [auth]
 redirect_urls = [
-  "https://phoenix-rise-flow.vercel.app/auth/callback",
-  "https://phoenix-rise-flow.vercel.app/auth/shopify/callback",
-  "https://phoenix-rise-flow.vercel.app/api/auth/callback"
+  "https://phoenixflow.netlify.app/auth/callback",
+  "https://phoenixflow.netlify.app/auth/shopify/callback",
+  "https://phoenixflow.netlify.app/api/auth/callback"
 ]

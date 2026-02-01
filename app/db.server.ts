@@ -4,7 +4,7 @@ declare global {
   var prismaGlobal: PrismaClient;
 }
 
-// Optimized connection pooling for serverless (Vercel)
+// Optimized connection pooling for serverless (Netlify)
 const prismaClientSingleton = () => {
   return new PrismaClient({
     log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
@@ -14,7 +14,7 @@ const prismaClientSingleton = () => {
       },
     },
     // Connection pool settings optimized for serverless
-    // Prevents "too many connections" errors on Vercel
+    // Prevents "too many connections" errors on Netlify
     // Uses connection pooling with reasonable limits
   });
 };
@@ -29,7 +29,7 @@ if (process.env.NODE_ENV !== "production") {
 const prisma = global.prismaGlobal ?? prismaClientSingleton();
 
 // For serverless environments, close connections after a timeout
-// This prevents connection leaks in Vercel functions
+// This prevents connection leaks in Netlify functions
 if (process.env.NODE_ENV === "production") {
   // Graceful shutdown
   process.on("beforeExit", async () => {

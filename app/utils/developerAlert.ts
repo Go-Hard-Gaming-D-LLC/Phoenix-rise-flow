@@ -3,19 +3,19 @@
 /**
  * PHOENIX FLOW: DEVELOPER DISTRESS SIGNAL
  * Use this to log critical failures (Fraud, API Crashes, Limits)
- * so they appear clearly in your Vercel logs.
+ * so they appear clearly in your Netlify logs.
  */
 export async function sendDeveloperAlert(
-  type: 'ERROR' | 'LIMIT_REACHED' | 'FRAUD', 
-  message: string, 
+  type: 'ERROR' | 'LIMIT_REACHED' | 'FRAUD',
+  message: string,
   details?: any
 ) {
   const timestamp = new Date().toISOString();
-  
-  // 1. THE LOUD LOG (Visible in Vercel/Terminal)
+
+  // 1. THE LOUD LOG (Visible in Netlify/Terminal)
   // We use a specific format " [DEV_ALERT] " so you can filter for it easily.
   console.error(`🚨 [DEV_ALERT] [${type}] ${timestamp}: ${message}`);
-  
+
   if (details) {
     console.error(JSON.stringify(details, null, 2));
   }
