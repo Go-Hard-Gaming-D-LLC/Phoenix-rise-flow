@@ -1,5 +1,5 @@
 {
-  "name": "Merchant Co-Pilot Workstation",
+  "name": "Phoenix Flow",
   "description": "Autonomous mission control for Etsy and Shopify merchants. Automated SEO audits, image backlink hunting, and high-conversion social marketing packs for Pinterest, Facebook, and TikTok.",
   "requestFramePermissions": [
     "geolocation"
