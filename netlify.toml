@@ -1,5 +1,5 @@
 [build]
-  command = "npx prisma generate && npm run build"
+  command = "npm run build" # or "remix vite:build"
   publish = "build/client"
   functions = "netlify/functions"
 
@@ -7,13 +7,16 @@
   node_bundler = "esbuild"
   external_node_modules = ["@prisma/client", "prisma"]
 
-# ✅ THE FIX: Point to the Function, not the HTML file
+# ✅ FIX 3: Route Proxy/API requests to the "Function" Brain
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/index"
+  status = 200
+  force = true
+
+# ✅ FIX 1 (Modified): Route everything else to the Remix entry point
+# We use /.netlify/functions/index instead of index.html because Remix is SSR.
 [[redirects]]
   from = "/*"
   to = "/.netlify/functions/index"
   status = 200
-
-[build.environment]
-  NODE_VERSION = "20"
-  NPM_FLAGS = "--legacy-peer-deps"
-  SECRETS_SCAN_OMIT_KEYS = "SCOPES,SHOPIFY_API_KEY"
