@@ -20,3 +20,8 @@
   status = 200
   force = true
 
+
+[build.environment]
+  NODE_VERSION = "20"
+  NPM_FLAGS = "--legacy-peer-deps"
+  SECRETS_SCAN_OMIT_KEYS = "SCOPES,SHOPIFY_API_KEY"
