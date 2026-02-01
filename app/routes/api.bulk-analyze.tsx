@@ -3,6 +3,7 @@ import { authenticate } from "../shopify.server";
 // IMPORT THE FUNCTIONS THAT ACTUALLY EXIST
 import { analyzeProductData, generateJSONLD } from "../gemini.server";
 import { sendDeveloperAlert } from "../utils/developerAlert"; // Developer Alert Import
+import { getUserTier, canAccessFeature, hasReachedLimit } from "../utils/tierConfig"; // Tier Logic
 import db from "../db.server";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -24,11 +25,24 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         const productJson = formData.get("productJson"); // Pass the raw product data
         const shop = session.shop;
 
-        // 🛡️ Security Blockade (15-limit)
-        const count = await db.optimizationHistory.count({ where: { shop } });
-        if (count >= 15) {
-            await sendDeveloperAlert('LIMIT_REACHED', `Shop ${shop} reached Phoenix Limit.`);
-            return json({ error: "Phoenix Limit Reached" }, { status: 403 });
+        // 1. Get Tier & Check Feature Access
+        const userTier = await getUserTier(shop);
+        if (!canAccessFeature(userTier, 'bulk_analyzer')) {
+            return json({ error: "Please upgrade to Starter to use Bulk Analyzer" }, { status: 403 });
+        }
+
+        // 2. Check Monthly Limits
+        const firstOfOfMonth = new Date();
+        firstOfOfMonth.setDate(1);
+        firstOfOfMonth.setHours(0, 0, 0, 0);
+
+        const currentUsage = await db.optimizationHistory.count({
+            where: { shop, createdAt: { gte: firstOfOfMonth } }
+        });
+
+        if (hasReachedLimit(userTier, 'descriptionsPerMonth', currentUsage)) {
+            await sendDeveloperAlert('LIMIT_REACHED', `Shop ${shop} limit hit: ${currentUsage} / ${userTier}`);
+            return json({ error: "Monthly limit reached" }, { status: 403 });
         }
 
         // Calling the function that exists in your gemini.server.ts
