@@ -14,9 +14,9 @@
   status = 200
   force = true
 
-# ✅ FIX 1 (Modified): Route everything else to the Remix entry point
-# We use /.netlify/functions/index instead of index.html because Remix is SSR.
 [[redirects]]
   from = "/*"
-  to = "/.netlify/functions/index"
+  to = "/index.html"
   status = 200
+  force = true
+
