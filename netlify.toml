@@ -1,27 +1,28 @@
+# PHOENIX FLOW: NETLIFY CONFIGURATION (V3 ANTIGRAVITY)
+
 [build]
-  command = "npm run build" # or "remix vite:build"
+  # Use relative paths so Netlify can find them on its server
+  command = "npx prisma generate && npm run build"
   publish = "build/client"
   functions = "netlify/functions"
 
-[functions]
-  node_bundler = "esbuild"
-  external_node_modules = ["@prisma/client", "prisma"]
+[build.environment]
+  # Keep your Shopify keys safe from scans
+  SECRETS_SCAN_OMIT_KEYS = "SHOPIFY_API_KEY,SCOPES"
 
-# ✅ FIX 3: Route Proxy/API requests to the "Function" Brain
+# --- REDIRECTS: THE 404 KILLERS ---
+
+# 1. THE API BRIDGE
+# This sends all /api requests to your Remix backend functions
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/index"
   status = 200
   force = true
 
+# 2. THE SPA REFRESH FIX (From Video)
+# This prevents "Page Not Found" when you refresh the browser
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
-  force = true
-
-
-[build.environment]
-  NODE_VERSION = "20"
-  NPM_FLAGS = "--legacy-peer-deps"
-  SECRETS_SCAN_OMIT_KEYS = "SCOPES,SHOPIFY_API_KEY"
