@@ -333,44 +333,15 @@ export async function ignitePhoenix(prompt: string, context: string = 'General S
  * analyzeProductData: specialized function for the Bulk Analyzer route
  * Scans product JSON for SEO and trend gaps.
  */
-export async function analyzeProductData(productData: any, brandContext?: string) {
-  try {
-    const prompt = `
-      [STRICT IRON PHOENIX MODE]
-      ROLE: Elite E-commerce Growth Engineer for ${brandContext || "a high-growth store"}.
-      
-      PRODUCT DATA: ${JSON.stringify(productData)}
-      
-      TASK: Generate elite-level SEO/GEO optimization for this product.
-      
-      OUTPUT REQUIREMENTS:
-      - optimized_title: High-CTR long-tail title.
-      - optimized_html_description: Semantic HTML (h2, p, ul) with conversion hooks.
-      - json_ld_schema: Full Product Schema.org script (valid JSON string).
-      - seoScore: Performance rating (0-10).
-      
-      OUTPUT JSON ONLY:
-      {
-        "optimized_title": "...",
-        "optimized_html_description": "...",
-        "json_ld_schema": "...",
-        "seoScore": 9.8,
-        "missing_trust_signals": ["signal1", "signal2"]
-      }
-    `;
-
-    const result = await model.generateContent(prompt);
-    let text = result.response.text().replace(/```json|```/g, "").trim();
-    return JSON.parse(text);
-  } catch (error) {
-    console.error('Product Analysis Error:', error);
-    return {
-      error: 'Analysis failed',
-      missing_keywords: [],
-      effectiveness_score: 0,
-      demographic_improvement: "N/A"
-    };
-  }
+// TEMPORARY MOCK FOR TESTING
+export async function analyzeProductData(productData: any) {
+  console.log("🛠️ MOCK MODE: Simulation active.");
+  return {
+    optimized_title: "MOCK: Elite SEO Title for " + productData.title,
+    optimized_html_description: "<h2>Mock Content</h2><p>Safe test description.</p>",
+    seoScore: 9.9,
+    missing_trust_signals: ["Signal A", "Signal B"]
+  };
 }
 /**
  * PHOENIX FLOW: SCHEMA SHIELD (JSON-LD Generator)
