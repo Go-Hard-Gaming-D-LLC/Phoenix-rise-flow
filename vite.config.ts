@@ -3,7 +3,7 @@ import { installGlobals } from "@remix-run/node";
 import { defineConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 
-import { netlifyPlugin } from "@netlify/remix-adapter/plugin";
+import { cloudflareDevProxyVitePlugin } from "@remix-run/dev";
 
 installGlobals();
 
@@ -22,12 +22,12 @@ export default defineConfig(({ mode }) => {
       },
     },
     plugins: [
+      cloudflareDevProxyVitePlugin(),
       remix({
         ignoredRouteFiles: ["**/.*"],
         buildDirectory: "build",
         serverBuildFile: "index.js",
       }),
-      netlifyPlugin(),
       tsconfigPaths(),
     ],
 
