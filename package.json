@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "shopify app dev",
-    "build": "remix vite:build && cp public/_redirects build/client/_redirects",
+    "build": "remix vite:build && node -e \"require('fs').copyFileSync('public/_redirects','build/client/_redirects')\"",
     "start": "shopify app serve",
     "preview": "vite preview",
     "prisma:generate": "prisma generate",
