@@ -1,0 +1,11 @@
+name = "merchant-co-pilot-workstation"
+compatibility_date = "2024-04-03"
+pages_build_output_dir = "./build/client"
+
+[vars]
+SHOPIFY_API_KEY = "ea7d669014bc192a3d3587fe2baa34a2"
+APP_URL = "https://ironphoenixflow.com"
+
+[[kv_namespaces]]
+binding = "SESSION_KV"
+id = "SESSION_KV_ID"

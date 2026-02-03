@@ -1,11 +1,11 @@
 # ✅ CORRECT APP: Phoenix Flow Rise
 client_id = "ea7d669014bc192a3d3587fe2baa34a2"
 name = "Phoenix Flow Rise"
-application_url = "https://phoenixflow.netlify.app"
+application_url = "https://ironphoenixflow.com"
 embedded = true
 
 [build]
-automatically_update_urls_on_dev = false
+automatically_update_urls_on_dev = true
 
 [webhooks]
 api_version = "2026-01"
@@ -17,12 +17,12 @@ use_legacy_install_flow = false
 
 [auth]
 redirect_urls = [
-  "https://phoenixflow.netlify.app/auth/callback",
-  "https://phoenixflow.netlify.app/auth/shopify/callback",
-  "https://phoenixflow.netlify.app/api/auth/callback"
+  "https://ironphoenixflow.com/auth/callback",
+  "https://ironphoenixflow.com/auth/shopify/callback",
+  "https://ironphoenixflow.com/api/auth/callback"
 ]
 
 [app_proxy]
-url = "https://phoenixflow.netlify.app/api/proxy/shopify"
+url = "https://ironphoenixflow.com/api/proxy/shopify"
 subpath = "phoenix"
 prefix = "apps"

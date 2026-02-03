@@ -1,59 +1,44 @@
-import { PassThrough } from "stream";
-import { renderToPipeableStream } from "react-dom/server";
+import { type EntryContext } from "@remix-run/cloudflare";
 import { RemixServer } from "@remix-run/react";
-import {
-  createReadableStreamFromReadable,
-  type EntryContext,
-} from "@remix-run/node";
 import { isbot } from "isbot";
+import { renderToReadableStream } from "react-dom/server";
 import { addDocumentResponseHeaders } from "./shopify.server";
-
-export const streamTimeout = 5000;
 
 export default async function handleRequest(
   request: Request,
   responseStatusCode: number,
   responseHeaders: Headers,
-  remixContext: EntryContext
+  remixContext: EntryContext,
 ) {
   addDocumentResponseHeaders(request, responseHeaders);
   const userAgent = request.headers.get("user-agent");
-  const callbackName = isbot(userAgent ?? '')
-    ? "onAllReady"
-    : "onShellReady";
 
-  return new Promise((resolve, reject) => {
-    const { pipe, abort } = renderToPipeableStream(
-      <RemixServer
-        context={remixContext}
-        url={request.url}
-      />,
-      {
-        [callbackName]: () => {
-          const body = new PassThrough();
-          const stream = createReadableStreamFromReadable(body);
+  const body = await renderToReadableStream(
+    <RemixServer context={remixContext} url={request.url} />,
+    {
+      signal: request.signal,
+      onError(error: unknown) {
+        // Log streaming rendering errors from inside the shell
+        console.error(error);
+        responseStatusCode = 500;
+      },
+    }
+  );
 
-          responseHeaders.set("Content-Type", "text/html");
-          resolve(
-            new Response(stream, {
-              headers: responseHeaders,
-              status: responseStatusCode,
-            })
-          );
-          pipe(body);
-        },
-        onShellError(error) {
-          reject(error);
-        },
-        onError(error) {
-          responseStatusCode = 500;
-          console.error(error);
-        },
-      }
-    );
+  if (isbot(userAgent || "")) {
+    const reader = body.getReader();
+    // eslint-disable-next-line
+    await reader.read();
+    responseHeaders.set("Content-Type", "text/html");
+    return new Response(body, {
+      headers: responseHeaders,
+      status: responseStatusCode,
+    });
+  }
 
-    // Automatically timeout the React renderer after 6 seconds, which ensures
-    // React has enough time to flush down the rejected boundary contents
-    setTimeout(abort, streamTimeout + 1000);
+  responseHeaders.set("Content-Type", "text/html");
+  return new Response(body, {
+    headers: responseHeaders,
+    status: responseStatusCode,
   });
 }
