@@ -1,6 +1,7 @@
 # PHOENIX FLOW: NETLIFY CONFIGURATION (V3 ANTIGRAVITY)
 
 [build]
+  base = "."
   # Use relative paths so Netlify can find them on its server
   command = "npx prisma generate && npm run build"
   publish = "build/client"
