@@ -13,17 +13,8 @@
 
 # --- REDIRECTS: THE 404 KILLERS ---
 
-# 1. THE API BRIDGE
-# This sends all /api requests to your Remix backend functions
-[[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/index"
-  status = 200
-  force = true
-
-# 2. THE SPA REFRESH FIX (From Video)
-# This prevents "Page Not Found" when you refresh the browser
+# Route everything to the Remix Server Function (SSR)
 [[redirects]]
   from = "/*"
-  to = "/index.html"
+  to = "/.netlify/functions/remix-server"
   status = 200

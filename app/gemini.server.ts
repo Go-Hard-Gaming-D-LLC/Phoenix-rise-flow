@@ -334,7 +334,7 @@ export async function ignitePhoenix(prompt: string, context: string = 'General S
  * Scans product JSON for SEO and trend gaps.
  */
 // TEMPORARY MOCK FOR TESTING
-export async function analyzeProductData(productData: any) {
+export async function analyzeProductData(productData: any, context?: any) {
   console.log("🛠️ MOCK MODE: Simulation active.");
   return {
     optimized_title: "MOCK: Elite SEO Title for " + productData.title,
