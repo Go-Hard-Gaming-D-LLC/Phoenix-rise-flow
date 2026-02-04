@@ -15,7 +15,3 @@ SCOPES = "read_products,write_products,write_content"
 binding = "SESSION_KV"
 id = "SESSION_KV_ID" # Replace with your actual KV ID from the dashboard
 
-# --- Supra Performance: Smart Placement ---
-# This reduces latency for your NY-to-Oregon data hops
-[smart_placement]
-enabled = true

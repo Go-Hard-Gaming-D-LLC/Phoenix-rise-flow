@@ -14,13 +14,6 @@ export default defineConfig(({ mode }) => {
         host: "localhost",
       },
     },
-    resolve: {
-      alias: {
-        // ✅ CLINICAL RESOLUTION: Maps to the ESM build to bypass Rollup resolution failure
-        "@shopify/shopify-app-remix/adapters/web-api": 
-          "@shopify/shopify-app-remix/dist/adapters/web-api/index.mjs",
-      },
-    },
     plugins: [
       cloudflareDevProxyVitePlugin(),
       remix({

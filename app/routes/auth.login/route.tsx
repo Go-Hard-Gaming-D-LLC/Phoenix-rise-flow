@@ -10,7 +10,9 @@ import {
   Text,
   TextField,
 } from "@shopify/polaris";
-import polarisTranslations from "@shopify/polaris/locales/en.json";
+import polarisTranslationsRaw from "@shopify/polaris/locales/en.json?raw";
+
+const polarisTranslations = JSON.parse(polarisTranslationsRaw) as Record<string, unknown>;
 import polarisStyles from "@shopify/polaris/build/esm/styles.css?url";
 
 import { login } from "../../shopify.server";
