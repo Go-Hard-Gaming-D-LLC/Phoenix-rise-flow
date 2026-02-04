@@ -14,6 +14,13 @@ export default defineConfig(({ mode }) => {
         host: "localhost",
       },
     },
+    // ✅ CLINICAL RESOLUTION: Force-map the adapter to its dist file
+    resolve: {
+      alias: {
+        "@shopify/shopify-app-remix/adapters/web-api": 
+          "node_modules/@shopify/shopify-app-remix/dist/adapters/web-api/index.js",
+      },
+    },
     plugins: [
       cloudflareDevProxyVitePlugin(),
       remix({
@@ -32,7 +39,7 @@ export default defineConfig(({ mode }) => {
       minify: false,
     },
     ssr: {
-      // ✅ CRITICAL FIX: Forces Vite to bundle Shopify for Cloudflare
+      // ✅ NO-EXTERNAL: Bundles the package for the Edge
       noExternal: ["@shopify/shopify-app-remix"],
       resolve: {
         conditions: ["workerd", "worker", "browser"],

@@ -1,11 +1,21 @@
 name = "merchant-co-pilot-workstation"
-compatibility_date = "2024-04-03"
-pages_build_output_dir = "./build/client"
+compatibility_date = "2026-02-04"
+compatibility_flags = ["nodejs_compat"] # Essential for Shopify adapters
+pages_build_output_dir = "build/client" # Matches your Remix build output
 
 [vars]
+# Ensure these match your Cloudflare Dashboard exactly
 SHOPIFY_API_KEY = "ea7d669014bc192a3d3587fe2baa34a2"
 APP_URL = "https://ironphoenixflow.com"
+# Critical: API Secret and Scopes should be stored as Secrets, but can be added here for testing
+SHOPIFY_API_SECRET = "" 
+SCOPES = "read_products,write_products,write_content"
 
 [[kv_namespaces]]
 binding = "SESSION_KV"
-id = "SESSION_KV_ID"
+id = "SESSION_KV_ID" # Replace with your actual KV ID from the dashboard
+
+# --- Supra Performance: Smart Placement ---
+# This reduces latency for your NY-to-Oregon data hops
+[smart_placement]
+enabled = true
