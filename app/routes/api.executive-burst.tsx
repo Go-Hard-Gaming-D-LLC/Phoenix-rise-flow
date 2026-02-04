@@ -6,31 +6,30 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 // FUNCTION: Batch Processor for Titles & Descriptions.
 // LIMIT: 40 Products.
 
-export const action = async ({ request }: ActionFunctionArgs) => {
+export const action = async ({ request, context }: ActionFunctionArgs) => {
   const { admin } = await authenticate.admin(request);
-  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+
+  // ENFORCEMENT: Use Cloudflare context for the API key (No process.env)
+  const env = (context as any).cloudflare?.env || (context as any).env || process.env;
+  const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY || "");
   const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
   try {
-    // 1. FETCH 40 PRODUCTS
+    // 1. FETCH: Strictly limited to 5 products for Edge stability
     const response = await admin.graphql(
       `#graphql
       query fetchBatch {
-  products(first: 40, query: "-tag:content-locked") {
+        products(first: 5, query: "-tag:content-locked") {
           edges {
             node {
-        id
-        title
-        descriptionHtml
-        handle
-        options(first: 3) {
-          name
-          values
+              id
+              title
+              descriptionHtml
+              handle
+            }
+          }
         }
-      }
-    }
-  }
-} `
+      }`
     );
 
     const responseJson = await response.json();
@@ -40,26 +39,23 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       return json({ status: "IDLE", message: "No unoptimized products found." });
     }
 
-    const report = [];
+    const report: any[] = [];
 
-    // 2. PARALLEL BURST (Gemini)
-    // We construct a massive single prompt or parallel promises. 
-    // For stability, we'll do parallel promises with 40 items.
-
+    // 2. SEQUENTIAL BURST: Using map for parallel execution but on a small 5-item set
     await Promise.all(products.map(async (product: any) => {
       const productStringId = String(product.id);
 
       const prompt = `
         Analyze this Shopify Product:
-Title: ${product.title}
-Desc: ${product.descriptionHtml}
+        Title: ${product.title}
+        Desc: ${product.descriptionHtml}
 
-Task: Generate an Optimized H1 Title and a Persuasive Description(HTML).
-  Constraints:
-1. Title: User - focused, descriptive, clean.
-        2. Description: 2 sentences max, sales - driven.
-        3. Output JSON: { "title": "...", "descriptionHtml": "..." }
-`;
+        Task: Generate an Optimized H1 Title and a Persuasive Description(HTML).
+          Constraints:
+        1. Title: User - focused, descriptive, clean.
+                2. Description: 2 sentences max, sales - driven.
+                3. Output JSON: { "title": "...", "descriptionHtml": "..." }
+        `;
 
       try {
         const result = await model.generateContent(prompt);
@@ -71,16 +67,10 @@ Task: Generate an Optimized H1 Title and a Persuasive Description(HTML).
         await admin.graphql(
           `#graphql
           mutation productUpdate($input: ProductInput!) {
-  productUpdate(input: $input) {
-              product {
-      id
-    }
-              userErrors {
-      field
-      message
-    }
-  }
-} `,
+            productUpdate(input: $input) {
+              product { id }
+            }
+          }`,
           {
             variables: {
               input: {
@@ -96,10 +86,10 @@ Task: Generate an Optimized H1 Title and a Persuasive Description(HTML).
         await admin.graphql(
           `#graphql
           mutation addTags($id: ID!, $tags: [String!]!) {
-  tagsAdd(id: $id, tags: $tags) {
+            tagsAdd(id: $id, tags: $tags) {
               node { id }
-  }
-} `,
+            }
+          }`,
           {
             variables: {
               id: productStringId,

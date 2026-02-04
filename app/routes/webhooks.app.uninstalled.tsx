@@ -3,13 +3,17 @@ import { authenticate } from "../shopify.server";
 import db from "../db.server";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { shop, session, topic } = await authenticate.webhook(request);
+  const { shop, session } = await authenticate.webhook(request);
 
-  console.log(`Received ${topic} webhook for ${shop}`);
-
-  // Webhook requests can trigger multiple times and after an app has already been uninstalled.
-  // If this webhook already ran, the session may have been deleted previously.
   if (session) {
+    // 1. Lock the churn data before wiping the session
+    await db.antiChurn.upsert({
+      where: { shop },
+      update: { lastUninstalled: new Date(), trialUsed: true },
+      create: { shop, lastUninstalled: new Date(), trialUsed: true }
+    });
+
+    // 2. Wipe active session data
     await db.session.deleteMany({ where: { shop } });
   }
 

@@ -1,11 +1,11 @@
-import { type ActionFunctionArgs } from "@remix-run/cloudflare";
+import { json, type ActionFunctionArgs } from "@remix-run/cloudflare";
 import shopify from "../shopify.server";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const { admin } = await shopify.authenticate.admin(request);
 
   try {
-    /* Fetch primary location */
+    /* 1. Fetch primary location */
     const locationRes = await admin.graphql(`
       query {
         locations(first: 1) {
@@ -18,10 +18,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const locationId = locationJson.data.locations.nodes[0]?.id;
 
     if (!locationId) {
-      throw new Error("No Shopify location found");
+      throw new Error("No active Shopify location found. Ensure locations are configured in your admin.");
     }
 
-    /* Fetch products */
+    /* 2. Fetch products - Limited to 50 for Edge stability */
     const response = await admin.graphql(`
       query fetchVendorInventory {
         products(first: 50) {
@@ -47,10 +47,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
     const podVendors = ["printify", "printful", "teelaunch", "anywherepod"];
 
+    // 3. STRICT SEQUENTIAL LOOP: Protects 128MB memory isolate
     for (const product of products) {
       const vendor = product.vendor?.toLowerCase() || "";
 
-      /* CJ / Dropshipping → Archive if any variant is 0 */
+      /* CJ / Dropshipping → Archive if out of stock */
       if (vendor.includes("cj") || vendor.includes("dropshipping")) {
         const shouldArchive = product.variants.nodes.some(
           (v: any) => v.inventoryQuantity <= 0
@@ -58,13 +59,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
         if (shouldArchive) {
           await admin.graphql(
-            `
-            mutation hideProduct($id: ID!) {
+            `mutation hideProduct($id: ID!) {
               productUpdate(input: { id: $id, status: ARCHIVED }) {
                 product { id }
               }
-            }
-          `,
+            }`,
             { variables: { id: product.id } }
           );
 
@@ -73,7 +72,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         }
       }
 
-      /* POD vendors → inventory floor = 3 */
+      /* POD vendors → Inventory floor enforcement */
       if (podVendors.some(v => vendor.includes(v))) {
         const quantities = product.variants.nodes
           .filter((v: any) => v.inventoryQuantity < 3)
@@ -85,13 +84,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
         if (quantities.length > 0) {
           await admin.graphql(
-            `
-            mutation setFloor($input: InventorySetQuantitiesInput!) {
+            `mutation setFloor($input: InventorySetQuantitiesInput!) {
               inventorySetQuantities(input: $input) {
                 userErrors { message }
               }
-            }
-          `,
+            }`,
             {
               variables: {
                 input: {
@@ -108,12 +105,13 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       }
     }
 
-    return Response.json({ status: "SYNCED", report });
+    return json({ status: "SYNCED", report });
 
   } catch (error: any) {
-    console.error(error);
-    return Response.json(
-      { status: "ERROR", message: error.message },
+    // 4. Enhanced Error Messaging: Explicit debugging guidance
+    console.error("Inventory Sync Error:", error.message);
+    return json(
+      { status: "ERROR", message: "Inventory sync failed. Check Shopify API quotas or Cloudflare Worker memory usage." },
       { status: 500 }
     );
   }

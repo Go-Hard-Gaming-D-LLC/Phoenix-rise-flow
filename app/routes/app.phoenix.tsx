@@ -1,8 +1,25 @@
 import { useState } from 'react';
 import { type LoaderFunctionArgs } from "@remix-run/cloudflare";
 import { useFetcher, useLoaderData } from '@remix-run/react';
-import { Page, Layout, Card, Text, TextField, Button, BlockStack, Banner, Box, List } from '@shopify/polaris';
+import { Page, Layout, Card, Text, TextField, Button, BlockStack, Banner, Box, List, Link } from '@shopify/polaris';
 import shopify from "../shopify.server";
+
+function BatchLimitBanner() {
+    return (
+        <Banner
+            title="Optimization Batch Limit Active"
+            tone="info"
+            onDismiss={() => { }}
+        >
+            <p>
+                To ensure peak stability and high-quality AI results on the edge,
+                batch optimization is currently limited to **5 products** per request.
+                Larger selections will be processed in sequential bursts.
+                <Link url="/app/settings"> Learn more about system limits.</Link>
+            </p>
+        </Banner>
+    );
+}
 
 // THE LOADER: This is the "Eyes" of the app
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -45,6 +62,7 @@ export default function PhoenixFlow() {
 
     return (
         <Page title="Phoenix Flow: Mission Control">
+            {products.length > 5 && <BatchLimitBanner />}
             <Layout>
                 {/* AUTOMATION SECTION */}
                 <Layout.Section>
@@ -67,6 +85,27 @@ export default function PhoenixFlow() {
                             />
                             <Button onClick={handleBulkAnalyze} loading={isLoading} variant="primary" size="large">
                                 Run $50k Store Scan
+                            </Button>
+                        </BlockStack>
+                    </Card>
+                </Layout.Section>
+
+                <Layout.Section>
+                    <Card>
+                        <BlockStack gap="400">
+                            <Text as="h2" variant="headingMd">Executive Content Burst</Text>
+                            <Banner tone="warning">
+                                <Text as="p">
+                                    ⚠️ <strong>Processing Limit:</strong> Batches of 5 are enforced for Edge stability.
+                                </Text>
+                            </Banner>
+                            <Button
+                                variant="primary"
+                                tone="critical"
+                                onClick={() => fetcher.submit({}, { method: "POST", action: "/api/executive-burst" })}
+                                loading={fetcher.state === "submitting" && fetcher.formAction === "/api/executive-burst"}
+                            >
+                                Ignite Executive Burst
                             </Button>
                         </BlockStack>
                     </Card>

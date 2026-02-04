@@ -27,7 +27,7 @@ export default defineConfig(({ mode }) => {
       tsconfigPaths(),
     ],
     build: {
-      minifiy: false,
+      minify: false,
     },
     ssr: {
       resolve: {

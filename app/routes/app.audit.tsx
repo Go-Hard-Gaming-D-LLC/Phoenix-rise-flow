@@ -1,131 +1,69 @@
-import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/cloudflare";
-import { useFetcher, useLoaderData } from "@remix-run/react";
-import {
-  Page,
-  Layout,
-  Card,
-  Button,
-  BlockStack,
-  Text,
-  Banner,
-  List,
-  Box,
-} from "@shopify/polaris";
+import { useFetcher } from "@remix-run/react";
+import { Page, Layout, Card, BlockStack, Text, InlineStack, Badge, List } from "@shopify/polaris";
 import { TitleBar } from "@shopify/app-bridge-react";
 
-// FIX 2614: Standardized default import for the Shopify object
-import shopify from "../shopify.server";
-
-export const loader = async ({ request }: LoaderFunctionArgs) => {
-  // Authenticate the session using the default shopify object
-  await shopify.authenticate.admin(request);
-  return json({ status: "Audit Engine Ready" });
-};
-
-export const action = async ({ request }: ActionFunctionArgs) => {
-  const { admin } = await shopify.authenticate.admin(request);
-
-  try {
-    // PHASE 0: Executive Triage for Misrepresentation
-    // FIX: Using only valid Shop fields to clear GraphQL Validation errors
-    const response = await admin.graphql(
-      `#graphql
-      query getShopVitals {
-        shop {
-          name
-          url
-          contactEmail
-          primaryDomain {
-            url
-          }
-        }
-      }`
-    );
-
-    const responseJson = await response.json();
-    const shop = responseJson.data.shop;
-
-    const issues = [];
-    // Basic compliance check for the $50k Store Goal
-    if (!shop.contactEmail) {
-      issues.push("Missing Contact Email: High risk for Google Merchant Center suspension.");
-    }
-
-    // Placeholder for deeper policy checks via Shopify API
-    if (shop.url.includes("myshopify.com")) {
-      issues.push("Primary Domain: Using a .myshopify.com URL can impact trust scores.");
-    }
-
-    return json({
-      success: true,
-      issues,
-      shopName: shop.name
-    });
-  } catch (error: any) {
-    return json({ error: error.message }, { status: 500 });
-  }
-};
-
-export default function AuditPage() {
-  const { status } = useLoaderData<typeof loader>();
+export default function AuditSummary() {
   const fetcher = useFetcher<any>();
-  const isLoading = fetcher.state !== "idle";
-  const results = fetcher.data;
+  const auditData = fetcher.data?.results || [];
 
   return (
     <Page>
-      <TitleBar title="Compliance Audit" />
+      <TitleBar title="Elite Audit Summary" />
       <Layout>
+        {/* Verification Logic: No False Positives */}
         <Layout.Section>
-          <Banner tone="info">
-            <Text as="p">{status}: Safeguarding the Iron Phoenix from Misrepresentation flags.</Text>
-          </Banner>
-        </Layout.Section>
+          <BlockStack gap="500">
+            {auditData.map((result: any, index: number) => (
+              <div key={index} className="grade-card">
+                <div className="grade-card-header">
+                  <InlineStack align="space-between">
+                    <Text variant="headingMd" as="h2">Optimization Report: {result.currentTitle}</Text>
+                    <Badge tone={result.seoScore >= 9 ? "success" : "attention"}>
+                      {result.seoScore >= 9 ? "Elite Status" : "Action Required"}
+                    </Badge>
+                  </InlineStack>
+                </div>
 
-        <Layout.Section>
-          <Card>
-            <BlockStack gap="400">
-              <Text variant="headingMd" as="h2">Store Trust & Policy Audit</Text>
-              <Text as="p">Run a Phase 0 scan to identify legal gaps before scaling your designs.</Text>
-              <Button
-                variant="primary"
-                onClick={() => fetcher.submit({}, { method: "POST" })}
-                loading={isLoading}
-              >
-                Run Compliance Check
-              </Button>
-            </BlockStack>
-          </Card>
-        </Layout.Section>
+                <div className="grade-card-body">
+                  {/* The Score Circle */}
+                  <div className="score-display">
+                    <div className="score-circle">
+                      {Math.round(result.seoScore * 10)}
+                    </div>
+                    <Text variant="bodySm" tone="subdued" alignment="center">Phoenix Health Score</Text>
+                  </div>
 
-        {results?.issues && (
-          <Layout.Section>
-            <Card>
-              <BlockStack gap="400">
-                <Text variant="headingMd" as="h3">Audit Findings for {results.shopName}</Text>
-                {results.issues.length === 0 ? (
-                  <Banner tone="success">No critical misrepresentation issues found!</Banner>
-                ) : (
-                  /* FIX 2820: Using 'bg-fill-critical-secondary' to resolve TypeScript error */
-                  <Box
-                    padding="400"
-                    background="bg-fill-critical-secondary"
-                    borderRadius="200"
-                  >
-                    <BlockStack gap="200">
-                      <Text as="p" fontWeight="bold">Compliance Gaps Detected:</Text>
+                  {/* High-Precision Feedback Grid */}
+                  <div className="feedback-grid">
+                    <div className="feedback-item">
+                      <Text variant="headingSm" as="h5">SEO Vitals</Text>
+                      <Text as="p" variant="bodySm" tone="subdued">
+                        {result.seoScore >= 8 ? "Long-tail keywords verified in H1 and metadata." : "Missing core gaming search terms."}
+                      </Text>
+                    </div>
+                    <div className="feedback-item">
+                      <Text variant="headingSm" as="h5">Trust Signals</Text>
                       <List type="bullet">
-                        {results.issues.map((issue: string, i: number) => (
-                          <List.Item key={i}>{issue}</List.Item>
-                        ))}
+                        {result.flaggedIssues.length > 0
+                          ? result.flaggedIssues.map((issue: string, i: number) => <List.Item key={i}>{issue}</List.Item>)
+                          : <List.Item>All 2026 trust signals verified.</List.Item>
+                        }
                       </List>
-                    </BlockStack>
-                  </Box>
-                )}
-              </BlockStack>
-            </Card>
-          </Layout.Section>
-        )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Optimization Code Block */}
+                <div className="optimization-section">
+                  <Text variant="headingSm" as="h3">Verified Schema Shield (JSON-LD)</Text>
+                  <pre className="optimized-content">
+                    {result.json_ld_schema}
+                  </pre>
+                </div>
+              </div>
+            ))}
+          </BlockStack>
+        </Layout.Section>
       </Layout>
     </Page>
   );

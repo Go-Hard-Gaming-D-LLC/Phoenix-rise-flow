@@ -6,15 +6,18 @@ import { sendDeveloperAlert } from "../utils/developerAlert"; // Developer Alert
 import { getUserTier, canAccessFeature, hasReachedLimit } from "../utils/tierConfig"; // Tier Logic
 import db from "../db.server";
 
-export const action = async ({ request }: ActionFunctionArgs) => {
+export const action = async ({ request, context }: ActionFunctionArgs) => {
     const { admin, session } = await authenticate.admin(request);
+    const env = (context as any).cloudflare?.env || (context as any).env || process.env;
+    const apiKey = env.GEMINI_API_KEY;
+
     const formData = await request.formData();
     const mode = formData.get("mode");
 
     // --- MODE 1: SCAN (The Triage) ---
     if (mode === "scan") {
         const response = await admin.graphql(`
-      query { products(first: 20, reverse: true) { edges { node { id title bodyHtml variants(first: 1) { edges { node { price } } } } } } }
+      query { products(first: 5, reverse: true) { edges { node { id title bodyHtml variants(first: 1) { edges { node { price } } } } } } }
     `);
         const data = await response.json();
         return json({ products: data.data.products.edges.map((e: any) => e.node) });
@@ -36,6 +39,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         firstOfOfMonth.setDate(1);
         firstOfOfMonth.setHours(0, 0, 0, 0);
 
+        // WARNING: db.server.ts must be configured with a Cloudflare-compatible driver (e.g. Prisma Accelerate or D1)
+        // for this to work in production on Cloudflare Workers.
         const currentUsage = await db.optimizationHistory.count({
             where: { shop, createdAt: { gte: firstOfOfMonth } }
         });
@@ -49,7 +54,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         const analysis = await analyzeProductData(JSON.parse(productJson as string));
 
         // Also generate the Schema Shield (JSON-LD) to fix GMC flags
-        const schema = await generateJSONLD(analysis.optimized_title, "19.99");
+        const schema = await generateJSONLD(analysis.optimized_title, "19.99", "USD", apiKey);
 
         return json({ analysis, schema });
     }

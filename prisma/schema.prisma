@@ -62,3 +62,13 @@ model OptimizationHistory {
   @@index([createdAt])
   @@index([shop, optimizationType, createdAt])
 }
+
+model AntiChurn {
+  id              Int       @id @default(autoincrement())
+  shop            String    @unique
+  firstInstalled  DateTime  @default(now())
+  lastUninstalled DateTime?
+  trialUsed       Boolean   @default(true)
+  
+  @@index([shop])
+}

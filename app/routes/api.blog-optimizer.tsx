@@ -2,10 +2,11 @@ import { type ActionFunctionArgs } from "@remix-run/cloudflare";
 import shopify from "../shopify.server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-export const action = async ({ request }: ActionFunctionArgs) => {
+export const action = async ({ request, context }: ActionFunctionArgs) => {
   const { admin } = await shopify.authenticate.admin(request);
-  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+  const env = (context as any).cloudflare?.env || (context as any).env || process.env;
+  const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY || "");
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
   try {
     // 1. FETCH: Grab all active blog posts

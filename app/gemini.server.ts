@@ -12,16 +12,23 @@ import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/ge
 // ============================================================
 let geminiClient: GoogleGenerativeAI | undefined;
 
-function getGeminiClient() {
-  if (!process.env.GEMINI_API_KEY) {
+function getGeminiClient(apiKey?: string) {
+  const key = apiKey || process.env.GEMINI_API_KEY;
+  if (!key) {
     // Graceful fallback or error
-    console.error("❌ GEMINI_API_KEY is missing from .env");
+    console.error("❌ GEMINI_API_KEY is missing/undefined");
     throw new Error("GEMINI_API_KEY is not set.");
   }
 
-  // Reuse existing client if available
+  // Reuse existing client if available AND key matches (or simple reuse if singleton)
+  // For simplicity: if apiKey is provided, always new or check.
+  // We'll just create a new one if apiKey is provided to be safe in Workers.
+  if (apiKey) {
+    return new GoogleGenerativeAI(apiKey);
+  }
+
   if (!geminiClient) {
-    geminiClient = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    geminiClient = new GoogleGenerativeAI(key);
   }
 
   return geminiClient;
@@ -349,7 +356,7 @@ export async function analyzeProductData(productData: any, context?: any) {
  * This generates the invisible code that stops "Schema" spam emails.
  * It creates Google Rich Snippets for products automatically.
  */
-export async function generateJSONLD(productName: string, price: string, currency: string = "USD") {
+export async function generateJSONLD(productName: string, price: string, currency: string = "USD", apiKey?: string) {
   const prompt = `
     [STRICT CODE MODE]
     TASK: Generate valid Shopify JSON-LD (Schema.org) script for a product.
@@ -368,7 +375,7 @@ export async function generateJSONLD(productName: string, price: string, currenc
 
   try {
     // Reuse the existing singleton client
-    const client = getGeminiClient();
+    const client = getGeminiClient(apiKey);
     const model = client.getGenerativeModel({
       model: 'gemini-1.5-pro',
       safetySettings: safetySettings
