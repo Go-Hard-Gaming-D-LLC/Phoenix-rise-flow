@@ -4,7 +4,6 @@ import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig(({ mode }) => {
   const isProduction = mode === "production";
-
   return {
     server: isProduction ? undefined : {
       port: 3000,
@@ -14,32 +13,30 @@ export default defineConfig(({ mode }) => {
         host: "localhost",
       },
     },
-    // ✅ CLINICAL RESOLUTION: Force-map the adapter to its dist file
     resolve: {
       alias: {
         "@shopify/shopify-app-remix/adapters/web-api": 
-          "node_modules/@shopify/shopify-app-remix/dist/adapters/web-api/index.js",
+          "@shopify/shopify-app-remix/dist/adapters/web-api/index.mjs",
       },
     },
     plugins: [
-      cloudflareDevProxyVitePlugin(),
       remix({
         future: {
           v3_fetcherPersist: true,
           v3_relativeSplatPath: true,
           v3_throwAbortReason: true,
-          v3_lazyRouteDiscovery: true, // v7 compatibility
-          v3_singleFetch: true, // v7 compatibility
+          v3_lazyRouteDiscovery: true,
+          v3_singleFetch: true,
         },
         ignoredRouteFiles: ["**/.*"],
       }),
+      cloudflareDevProxyVitePlugin(), // ✅ Moved after remix()
       tsconfigPaths(),
     ],
     build: {
       minify: false,
     },
     ssr: {
-      // ✅ NO-EXTERNAL: Bundles the package for the Edge
       noExternal: ["@shopify/shopify-app-remix"],
       resolve: {
         conditions: ["workerd", "worker", "browser"],
