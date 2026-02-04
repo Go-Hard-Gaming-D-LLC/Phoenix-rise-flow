@@ -3,7 +3,7 @@
 /**
  * PHOENIX FLOW: DEVELOPER DISTRESS SIGNAL
  * Use this to log critical failures (Fraud, API Crashes, Limits)
- * so they appear clearly in your Netlify logs.
+ * so they appear clearly in your Cloudflare Pages logs.
  */
 export async function sendDeveloperAlert(
   type: 'ERROR' | 'LIMIT_REACHED' | 'FRAUD',
@@ -12,7 +12,7 @@ export async function sendDeveloperAlert(
 ) {
   const timestamp = new Date().toISOString();
 
-  // 1. THE LOUD LOG (Visible in Netlify/Terminal)
+  // 1. THE LOUD LOG (Visible in Cloudflare/Terminal)
   // We use a specific format " [DEV_ALERT] " so you can filter for it easily.
   console.error(`🚨 [DEV_ALERT] [${type}] ${timestamp}: ${message}`);
 

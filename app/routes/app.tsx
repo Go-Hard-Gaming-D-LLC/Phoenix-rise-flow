@@ -25,13 +25,13 @@ export default function App() {
       <div style={{ padding: '20px', background: '#ffe6e6', color: '#900', fontFamily: 'sans-serif' }}>
         <h1>CRITICAL ERROR: Missing Shopify API Key</h1>
         <p>The <code>SHOPIFY_API_KEY</code> environment variable is missing.</p>
-        <p>If running on Netlify:</p>
+        <p>If running on Cloudflare Pages:</p>
         <ul>
-          <li>Go to Site Settings &rarr; Environment Variables</li>
+          <li>Go to Settings &rarr; Environment Variables</li>
           <li>Add <code>SHOPIFY_API_KEY</code> (get this from your Shopify Partner Dashboard)</li>
           <li>Add <code>SHOPIFY_API_SECRET</code></li>
           <li>Add <code>SCOPES</code> (e.g., read_products,write_products)</li>
-          <li>Add <code>SHOPIFY_APP_URL</code> (your Netlify URL)</li>
+          <li>Add <code>SHOPIFY_APP_URL</code> (your Cloudflare URL)</li>
           <li>Trigger a new deploy.</li>
         </ul>
       </div>

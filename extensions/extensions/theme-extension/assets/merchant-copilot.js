@@ -62,7 +62,7 @@ const IconCheck = () => (
 
 // --- Main App Component ---
 async function askPhoenix(productName) {
-    // 1. We call the Shopify Proxy URL (not your Netlify URL directly)
+    // 1. We call the Shopify Proxy URL (not your App URL directly)
     // Note: /apps/phoenix maps to your secure api.proxy.shopify.tsx
     const proxyUrl = "/apps/phoenix";
 
