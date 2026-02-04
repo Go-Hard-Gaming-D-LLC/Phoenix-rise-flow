@@ -339,6 +339,7 @@ export async function analyzeProductData(productData: any, context?: any) {
   return {
     optimized_title: "MOCK: Elite SEO Title for " + productData.title,
     optimized_html_description: "<h2>Mock Content</h2><p>Safe test description.</p>",
+    json_ld_schema: "{}",
     seoScore: 9.9,
     missing_trust_signals: ["Signal A", "Signal B"]
   };
