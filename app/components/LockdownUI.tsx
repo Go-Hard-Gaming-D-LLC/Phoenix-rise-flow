@@ -27,7 +27,7 @@ export default function LockdownUI() {
                                     </Banner>
 
                                     <BlockStack gap="200">
-                                        <Text variant="bodylg" as="p" alignment="center">
+                                        <Text variant="bodyLg" as="p" alignment="center">
                                             To continue accessing the logic controller and executive burst features,
                                             please upgrade to a professional plan.
                                         </Text>

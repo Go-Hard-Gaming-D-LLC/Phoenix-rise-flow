@@ -30,7 +30,7 @@ export default function AuditSummary() {
                     <div className="score-circle">
                       {Math.round(result.seoScore * 10)}
                     </div>
-                    <Text variant="bodySm" tone="subdued" alignment="center">Phoenix Health Score</Text>
+                    <Text variant="bodySm" tone="subdued" alignment="center" as="p">Phoenix Health Score</Text>
                   </div>
 
                   {/* High-Precision Feedback Grid */}

@@ -56,7 +56,7 @@ export default function LogicController() {
                                             <div className="score-circle">
                                                 {product.seoScore * 10}
                                             </div>
-                                            <Text variant="bodySm" tone="subdued" alignment="center">Verification Score</Text>
+                                            <Text variant="bodySm" tone="subdued" alignment="center" as="p">Verification Score</Text>
                                         </div>
 
                                         <div className="feedback-grid">
