@@ -1,4 +1,4 @@
-import "@shopify/shopify-app-remix/server/adapters/web-api";
+import "@shopify/shopify-app-remix/server/adapters/node";
 import {
   AppDistribution,
   DeliveryMethod,
