@@ -4,6 +4,12 @@ import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig(({ mode }) => {
   const isProduction = mode === "production";
+  
+  const shopifyAlias = {
+    "@shopify/shopify-app-remix/adapters/web-api": 
+      "@shopify/shopify-app-remix/dist/adapters/web-api/index.mjs",
+  };
+  
   return {
     server: isProduction ? undefined : {
       port: 3000,
@@ -14,10 +20,7 @@ export default defineConfig(({ mode }) => {
       },
     },
     resolve: {
-      alias: {
-        "@shopify/shopify-app-remix/adapters/web-api": 
-          "@shopify/shopify-app-remix/dist/adapters/web-api/index.mjs",
-      },
+      alias: shopifyAlias,
     },
     plugins: [
       remix({
@@ -30,7 +33,7 @@ export default defineConfig(({ mode }) => {
         },
         ignoredRouteFiles: ["**/.*"],
       }),
-      cloudflareDevProxyVitePlugin(), // ✅ Moved after remix()
+      cloudflareDevProxyVitePlugin(),
       tsconfigPaths(),
     ],
     build: {
@@ -39,6 +42,7 @@ export default defineConfig(({ mode }) => {
     ssr: {
       noExternal: ["@shopify/shopify-app-remix"],
       resolve: {
+        alias: shopifyAlias, // ✅ Add the same alias here for SSR builds
         conditions: ["workerd", "worker", "browser"],
         externalConditions: ["workerd", "worker"],
       },
