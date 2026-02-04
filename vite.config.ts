@@ -21,6 +21,8 @@ export default defineConfig(({ mode }) => {
           v3_fetcherPersist: true,
           v3_relativeSplatPath: true,
           v3_throwAbortReason: true,
+          v3_lazyRouteDiscovery: true, // v7 compatibility
+          v3_singleFetch: true, // v7 compatibility
         },
         ignoredRouteFiles: ["**/.*"],
       }),
@@ -30,6 +32,8 @@ export default defineConfig(({ mode }) => {
       minify: false,
     },
     ssr: {
+      // ✅ CRITICAL FIX: Forces Vite to bundle Shopify for Cloudflare
+      noExternal: ["@shopify/shopify-app-remix"],
       resolve: {
         conditions: ["workerd", "worker", "browser"],
         externalConditions: ["workerd", "worker"],
