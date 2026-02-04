@@ -1,4 +1,4 @@
-import { json, type ActionFunctionArgs } from "@remix-run/node";
+import { json, type ActionFunctionArgs } from "@remix-run/cloudflare";
 import { authenticate } from "../shopify.server";
 // IMPORT THE FUNCTIONS THAT ACTUALLY EXIST
 import { analyzeProductData, generateJSONLD } from "../gemini.server";

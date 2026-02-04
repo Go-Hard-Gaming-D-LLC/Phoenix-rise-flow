@@ -1,25 +1,29 @@
-import { json, type ActionFunctionArgs } from "@remix-run/node";
+import { json, type ActionFunctionArgs } from "@remix-run/cloudflare";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import shopify from "../shopify.server";
 import db from "../db.server";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+// const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || ""); // Moved inside action
 
-export const action = async ({ request }: ActionFunctionArgs) => {
+export const action = async ({ request, context }: ActionFunctionArgs) => {
   const { session } = await shopify.authenticate.admin(request);
-  
+
+  // Initialize AI with context (Cloudflare) or fallback
+  const env = (context as any).cloudflare?.env || (context as any).env || process.env;
+  const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY || "");
+
   // Fetch store configuration from Prisma
   const config = await db.configuration.findUnique({ where: { shop: session.shop } });
   const brandContext = config?.brandName || "your brand";
-  
+
   // Get request body to determine content type
   const body = await request.json();
   const { contentType, songTitle, productDetails, targetAudience } = body;
-  
+
   const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-  
+
   let prompt = "";
-  
+
   // Generate different prompts based on content type
   switch (contentType) {
     case "music_video":
@@ -49,7 +53,7 @@ OUTPUT FORMAT: Valid JSON array with this exact structure:
 Make scenes visually striking and YouTube-optimized for maximum engagement.
       `;
       break;
-      
+
     case "product_ad":
       prompt = `
 SYSTEM ROLE: Ad Creative Director for ${brandContext}
@@ -74,7 +78,7 @@ OUTPUT FORMAT: Valid JSON array:
 Focus on conversion, emotion, and urgency.
       `;
       break;
-      
+
     case "song_showcase":
       prompt = `
 SYSTEM ROLE: E-commerce Visual Designer for ${brandContext}
@@ -98,7 +102,7 @@ OUTPUT FORMAT: Valid JSON array:
 Create visuals that sell the song's emotion and value.
       `;
       break;
-      
+
     default:
       prompt = `
 SYSTEM ROLE: Content Creator for ${brandContext}
@@ -120,23 +124,23 @@ OUTPUT FORMAT: Valid JSON array:
   try {
     const result = await model.generateContent(prompt);
     let responseText = result.response.text();
-    
+
     // Clean up response - remove markdown code blocks if present
     responseText = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-    
+
     const content = JSON.parse(responseText);
-    
-    return json({ 
-      success: true, 
+
+    return json({
+      success: true,
       content,
       contentType,
-      brandContext 
+      brandContext
     });
-    
+
   } catch (error) {
     console.error("Content generation error:", error);
-    return json({ 
-      success: false, 
+    return json({
+      success: false,
       error: "Failed to generate content. Please try again.",
       details: error instanceof Error ? error.message : "Unknown error"
     }, { status: 500 });

@@ -1,14 +1,15 @@
 import { useState, useEffect } from "react";
-import type { LoaderFunctionArgs } from "@remix-run/node";
-import { json } from "@remix-run/node";
+import { json, type LoaderFunctionArgs } from "@remix-run/cloudflare";
 import { useLoaderData, useFetcher } from "@remix-run/react";
 import { authenticate } from "../shopify.server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // 1. Server-Side: Securely get API Key
-export const loader = async ({ request }: LoaderFunctionArgs) => {
+export const loader = async ({ request, context }: LoaderFunctionArgs) => {
   await authenticate.admin(request);
-  return json({ apiKey: process.env.GEMINI_API_KEY || "" });
+  // COMPATIBILITY: Try context.env (Cloudflare) then process.env (Node/Polyfill)
+  const env = (context as any).cloudflare?.env || (context as any).env || process.env;
+  return json({ apiKey: env.GEMINI_API_KEY || "" });
 };
 
 export default function Index() {
@@ -50,12 +51,12 @@ export default function Index() {
       const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
       let prompt = "";
-      if (type === 'identity') prompt = `Analyze ${config.shopifyUrl}. JSON: { "summary": "...", "targetAudience": "...", "usp": "..." }`;
-      if (type === 'audit') prompt = `Audit ${config.shopifyUrl} for Trust/Compliance. JSON: { "trustAudit": [{ "issue": "...", "recommendation": "..." }] }`;
-      if (type === 'editor') prompt = `Rewrite for ${editorGoal}: "${editorInput}". JSON: { "editedContent": "...", "explanation": "..." }`;
+      if (type === 'identity') prompt = `Analyze ${config.shopifyUrl}.JSON: { "summary": "...", "targetAudience": "...", "usp": "..." } `;
+      if (type === 'audit') prompt = `Audit ${config.shopifyUrl} for Trust / Compliance.JSON: { "trustAudit": [{ "issue": "...", "recommendation": "..." }] } `;
+      if (type === 'editor') prompt = `Rewrite for ${editorGoal}: "${editorInput}".JSON: { "editedContent": "...", "explanation": "..." } `;
 
       const result = await model.generateContent(prompt);
-      const text = result.response.text().replace(/```json|```/g, "").trim();
+      const text = result.response.text().replace(/```json | ```/g, "").trim();
       const data = JSON.parse(text);
 
       if (type === 'identity') setAnalysis((p: any) => ({ ...p, brandIdentity: data }));
@@ -63,7 +64,7 @@ export default function Index() {
       if (type === 'editor') setAnalysis((p: any) => ({ ...p, contentEdits: [data, ...(p.contentEdits || [])] }));
 
     } catch (e: any) {
-      alert(`AI Error: ${e.message}`);
+      alert(`AI Error: ${e.message} `);
     } finally {
       setLoading(prev => ({ ...prev, [type]: false }));
     }
@@ -73,18 +74,18 @@ export default function Index() {
     <div className="app-root">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=Outfit:wght@500;800&family=JetBrains+Mono:wght@400&display=swap');
-        :root { --bg-dark: #000; --card-bg: rgba(20,20,20,0.8); --primary: #a78bfa; --text-main: #fff; --text-muted: #9ca3af; --glass-border: rgba(255,255,255,0.1); }
+        :root { --bg-dark: #000; --card-bg: rgba(20, 20, 20, 0.8); --primary: #a78bfa; --text-main: #fff; --text-muted: #9ca3af; --glass-border: rgba(255, 255, 255, 0.1); }
         body { background: var(--bg-dark); color: var(--text-main); font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; }
-        .app-root { min-height: 100vh; display: flex; flex-direction: column; background-image: radial-gradient(circle at 10% 20%, rgba(167,139,250,0.08), transparent 40%); }
+        .app-root { min-height: 100vh; display: flex; flex-direction: column; background-image: radial-gradient(circle at 10% 20%, rgba(167, 139, 250, 0.08), transparent 40%); }
         .mission-control-layout { display: grid; grid-template-columns: 340px 1fr; height: 100vh; overflow: hidden; }
         
-        .config-sidebar { background: rgba(10,10,12,0.6); backdrop-filter: blur(20px); border-right: 1px solid var(--glass-border); padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+        .config-sidebar { background: rgba(10, 10, 12, 0.6); backdrop-filter: blur(20px); border-right: 1px solid var(--glass-border); padding: 24px; display: flex; flex-direction: column; gap: 20px; }
         .input-row { display: flex; flex-direction: column; gap: 8px; }
         .input-row label { font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; }
-        .input-row input, .input-row select { background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); padding: 12px; border-radius: 8px; color: white; }
+        .input-row input, .input-row select { background: rgba(0, 0, 0, 0.3); border: 1px solid var(--glass-border); padding: 12px; border-radius: 8px; color: white; }
         
         .mission-board { overflow-y: auto; padding: 0; flex: 1; }
-        .board-header { padding: 32px 48px; border-bottom: 1px solid var(--glass-border); background: rgba(5,5,5,0.8); position: sticky; top: 0; z-index: 10; }
+        .board-header { padding: 32px 48px; border-bottom: 1px solid var(--glass-border); background: rgba(5, 5, 5, 0.8); position: sticky; top: 0; z-index: 10; }
         
         .action-panel-grid { padding: 32px 48px; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; }
         .action-card { background: var(--card-bg); border: 1px solid var(--glass-border); padding: 24px; border-radius: 16px; transition: transform 0.2s; display: flex; flex-direction: column; }
@@ -92,7 +93,7 @@ export default function Index() {
         
         .prime-btn { background: linear-gradient(135deg, var(--primary), #b794f6); color: #000; font-weight: 700; border: none; padding: 12px 24px; border-radius: 10px; cursor: pointer; width: 100%; margin-top: 16px; }
         .prime-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        
+
         /* LEGAL SHIELD CSS */
         .legal-shield { background: rgba(255, 0, 0, 0.05); border: 1px solid rgba(255, 0, 0, 0.2); padding: 15px; border-radius: 8px; margin-top: 15px; }
         .legal-shield label { display: flex; align-items: center; cursor: pointer; color: #fca5a5; font-size: 0.85rem; font-weight: 600; }
@@ -100,7 +101,7 @@ export default function Index() {
 
         .editor-area { margin: 0 48px 48px; background: #0f0f11; border: 1px solid var(--glass-border); border-radius: 16px; padding: 24px; }
         .results-section { margin: 0 48px 48px; display: flex; flex-direction: column; gap: 16px; }
-        .result-box { background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); border-radius: 12px; padding: 20px; border-left: 4px solid var(--primary); }
+        .result-box { background: rgba(255, 255, 255, 0.03); border: 1px solid var(--glass-border); border-radius: 12px; padding: 20px; border-left: 4px solid var(--primary); }
         .code-block { background: #000; padding: 15px; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; color: var(--primary); white-space: pre-wrap; margin-top: 10px; border: 1px solid var(--glass-border); }
       `}</style>
 

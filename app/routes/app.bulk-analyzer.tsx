@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { LoaderFunctionArgs } from "@remix-run/node";
+import { type LoaderFunctionArgs } from "@remix-run/cloudflare";
 import { useFetcher } from "@remix-run/react";
 import {
   Page,

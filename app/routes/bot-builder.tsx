@@ -1,6 +1,7 @@
 
 import { useState, useEffect, useRef } from "react";
-import type { MetaFunction } from "@remix-run/node";
+import type { MetaFunction } from "@remix-run/cloudflare";
+import { json, type LoaderFunctionArgs, type ActionFunctionArgs } from "@remix-run/cloudflare";
 
 export const meta: MetaFunction = () => {
     return [

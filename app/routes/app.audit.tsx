@@ -1,4 +1,4 @@
-import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
+import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/cloudflare";
 import { useFetcher, useLoaderData } from "@remix-run/react";
 import {
   Page,
@@ -24,7 +24,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const { admin } = await shopify.authenticate.admin(request);
-  
+
   try {
     // PHASE 0: Executive Triage for Misrepresentation
     // FIX: Using only valid Shop fields to clear GraphQL Validation errors
@@ -44,22 +44,22 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
     const responseJson = await response.json();
     const shop = responseJson.data.shop;
-    
+
     const issues = [];
     // Basic compliance check for the $50k Store Goal
     if (!shop.contactEmail) {
-        issues.push("Missing Contact Email: High risk for Google Merchant Center suspension.");
-    }
-    
-    // Placeholder for deeper policy checks via Shopify API
-    if (shop.url.includes("myshopify.com")) {
-        issues.push("Primary Domain: Using a .myshopify.com URL can impact trust scores.");
+      issues.push("Missing Contact Email: High risk for Google Merchant Center suspension.");
     }
 
-    return json({ 
-      success: true, 
-      issues, 
-      shopName: shop.name 
+    // Placeholder for deeper policy checks via Shopify API
+    if (shop.url.includes("myshopify.com")) {
+      issues.push("Primary Domain: Using a .myshopify.com URL can impact trust scores.");
+    }
+
+    return json({
+      success: true,
+      issues,
+      shopName: shop.name
     });
   } catch (error: any) {
     return json({ error: error.message }, { status: 500 });
@@ -87,8 +87,8 @@ export default function AuditPage() {
             <BlockStack gap="400">
               <Text variant="headingMd" as="h2">Store Trust & Policy Audit</Text>
               <Text as="p">Run a Phase 0 scan to identify legal gaps before scaling your designs.</Text>
-              <Button 
-                variant="primary" 
+              <Button
+                variant="primary"
                 onClick={() => fetcher.submit({}, { method: "POST" })}
                 loading={isLoading}
               >
@@ -107,9 +107,9 @@ export default function AuditPage() {
                   <Banner tone="success">No critical misrepresentation issues found!</Banner>
                 ) : (
                   /* FIX 2820: Using 'bg-fill-critical-secondary' to resolve TypeScript error */
-                  <Box 
-                    padding="400" 
-                    background="bg-fill-critical-secondary" 
+                  <Box
+                    padding="400"
+                    background="bg-fill-critical-secondary"
                     borderRadius="200"
                   >
                     <BlockStack gap="200">

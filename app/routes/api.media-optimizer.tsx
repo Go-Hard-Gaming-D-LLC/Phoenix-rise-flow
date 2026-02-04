@@ -1,6 +1,6 @@
-import type { ActionFunctionArgs } from "@remix-run/node";
+import { type ActionFunctionArgs } from "@remix-run/cloudflare";
 // FIX 2614: Import the default shopify object to match your shopify.server.ts
-import shopify from "../shopify.server"; 
+import shopify from "../shopify.server";
 
 /**
  * Handles the API request for optimizing media images.
@@ -8,7 +8,7 @@ import shopify from "../shopify.server";
 export const action = async ({ request }: ActionFunctionArgs) => {
   // Use the authenticate method from the default shopify object
   const { admin } = await shopify.authenticate.admin(request);
-  
+
   try {
     // 1. FETCH: Uses 'media' instead of 'images' to stay ahead of deprecations
     const response = await admin.graphql(
@@ -57,7 +57,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
               productId: product.id,
               media: [{
                 id: mediaNode.id,
-                alt: `Iron Phoenix SEO: ${product.title}` 
+                alt: `Iron Phoenix SEO: ${product.title}`
               }]
             }
           }

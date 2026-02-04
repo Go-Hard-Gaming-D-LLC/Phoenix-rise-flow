@@ -1,4 +1,4 @@
-import { json, type ActionFunctionArgs } from "@remix-run/node";
+import { json, type ActionFunctionArgs } from "@remix-run/cloudflare";
 import shopify from "../shopify.server";
 import db from "../db.server";
 import { generateAIContent } from "../gemini.server";

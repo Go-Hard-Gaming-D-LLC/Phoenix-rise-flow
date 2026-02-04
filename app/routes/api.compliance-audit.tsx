@@ -1,4 +1,4 @@
-import { type ActionFunctionArgs } from "@remix-run/node";
+import { json, type ActionFunctionArgs } from "@remix-run/cloudflare";
 // FIX 2614: Using the correct default export for Iron Phoenix
 import shopify from "../shopify.server";
 
@@ -30,7 +30,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     );
 
     const resJson: any = await response.json();
-    
+
     // Check for GraphQL errors (e.g., missing scopes)
     if (resJson.errors) {
       console.error("GraphQL Error in Audit:", resJson.errors);
@@ -49,7 +49,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     ].filter(Boolean);
 
     // 4. REPORT: Return the status to update the Vitals Badge on the Dashboard
-    return Response.json({ 
+    return Response.json({
       status: missingPolicies.length === 0 ? "Healthy" : "Attention Required",
       missing: missingPolicies,
       shopName: shop.name

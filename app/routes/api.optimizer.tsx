@@ -1,9 +1,9 @@
-import type { ActionFunctionArgs } from "@remix-run/node";
-import shopify from "../shopify.server"; 
+import { json, type ActionFunctionArgs } from "@remix-run/cloudflare";
+import shopify from "../shopify.server";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const { admin } = await shopify.authenticate.admin(request);
-  
+
   try {
     const response = await admin.graphql(
       `#graphql
@@ -62,14 +62,14 @@ export const action = async ({ request }: ActionFunctionArgs) => {
             node { id } 
           }
         }`,
-        { 
-          variables: { 
+        {
+          variables: {
             id: product.id,
-            tags: ["visual-locked"] 
-          } 
+            tags: ["visual-locked"]
+          }
         }
       );
-      
+
       report.push({ title: product.title, status: "SEO_COMPLETE" });
     }
 
