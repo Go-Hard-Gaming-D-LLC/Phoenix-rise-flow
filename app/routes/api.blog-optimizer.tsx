@@ -1,4 +1,4 @@
-import { type ActionFunctionArgs } from "@remix-run/node";
+import { type ActionFunctionArgs } from "@remix-run/cloudflare";
 import shopify from "../shopify.server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
