@@ -1,49 +1,40 @@
 import { PrismaClient } from "@prisma/client";
 
 declare global {
-  var prismaGlobal: PrismaClient;
+  var prismaGlobal: PrismaClient | undefined;
 }
 
-// Optimized connection pooling for serverless (Cloudflare/Vercel)
 const prismaClientSingleton = () => {
   return new PrismaClient({
+    // Clinical logging: only errors in production to save Edge memory
     log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
     datasources: {
       db: {
+        // Must use the port 6543 URL for Cloudflare stability
         url: process.env.DATABASE_URL,
       },
     },
-    // Connection pool settings optimized for serverless
-    // Prevents "too many connections" errors
-    // Uses connection pooling with reasonable limits
   });
 };
 
-// In development, prevent hot reloading from creating new instances
-if (process.env.NODE_ENV !== "production") {
-  if (!global.prismaGlobal) {
-    global.prismaGlobal = prismaClientSingleton();
-  }
-}
-
+// Global singleton protects against hot-reload leaks
 const prisma = global.prismaGlobal ?? prismaClientSingleton();
 
-// For serverless environments, close connections after a timeout
-// This prevents connection leaks in serverless functions
-if (process.env.NODE_ENV === "production") {
-  // Graceful shutdown
-  process.on("beforeExit", async () => {
-    await prisma.$disconnect();
-  });
+if (process.env.NODE_ENV !== "production") {
+  global.prismaGlobal = prisma;
 }
 
-// Add connection pool monitoring (optional, for debugging)
+/**
+ * Supra Integrity Check
+ * Verified against the Shadow's Forge Postgres cluster
+ */
 export async function checkDatabaseConnection() {
   try {
+    // Clinical ping to Oregon
     await prisma.$queryRaw`SELECT 1`;
     return { connected: true };
   } catch (error) {
-    console.error("Database connection failed:", error);
+    console.error("❌ SUPRA DB FAILURE:", error);
     return { connected: false, error };
   }
 }
