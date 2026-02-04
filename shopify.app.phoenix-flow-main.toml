@@ -2,7 +2,7 @@
 
 client_id = "ea7d669014bc192a3d3587fe2baa34a2"
 name = "Phoenix Flow"
-application_url = "https://phoenixflow.netlify.app"
+application_url = "https://ironphoenixflow.com"
 embedded = true
 
 [build]
@@ -17,7 +17,7 @@ scopes = "read_content,read_files,read_inventory,read_legal_policies,read_mercha
 
 [auth]
 redirect_urls = [
-  "https://phoenixflow.netlify.app/auth/callback",
-  "https://phoenixflow.netlify.app/auth/shopify/callback",
-  "https://phoenixflow.netlify.app/api/auth/callback"
+  "https://ironphoenixflow.com/auth/callback",
+  "https://ironphoenixflow.com/auth/shopify/callback",
+  "https://ironphoenixflow.com/api/auth/callback"
 ]
