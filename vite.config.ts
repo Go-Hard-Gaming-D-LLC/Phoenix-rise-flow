@@ -5,6 +5,12 @@ import tsconfigPaths from "vite-tsconfig-paths";
 export default defineConfig(({ mode }) => {
   const isProduction = mode === "production";
 
+  // ✅ Shopify adapter alias for both client and SSR builds
+  const shopifyAlias = {
+    "@shopify/shopify-app-remix/adapters/web-api": 
+      "@shopify/shopify-app-remix/dist/adapters/web-api/index.mjs",
+  };
+
   return {
     server: isProduction ? undefined : {
       port: 3000,
@@ -14,27 +20,30 @@ export default defineConfig(({ mode }) => {
         host: "localhost",
       },
     },
+    resolve: {
+      alias: shopifyAlias, // ✅ For client builds
+    },
     plugins: [
-      cloudflareDevProxyVitePlugin(),
       remix({
         future: {
           v3_fetcherPersist: true,
           v3_relativeSplatPath: true,
           v3_throwAbortReason: true,
-          v3_lazyRouteDiscovery: true, // v7 compatibility
-          v3_singleFetch: true, // v7 compatibility
+          v3_lazyRouteDiscovery: true,
+          v3_singleFetch: true,
         },
         ignoredRouteFiles: ["**/.*"],
       }),
+      cloudflareDevProxyVitePlugin(), // ✅ Moved after remix()
       tsconfigPaths(),
     ],
     build: {
-      minify: false,
+      minify: isProduction, // ✅ Enable minify in production
     },
     ssr: {
-      // ✅ NO-EXTERNAL: Forces bundling of Shopify for the Cloudflare Edge
       noExternal: ["@shopify/shopify-app-remix"],
       resolve: {
+        alias: shopifyAlias, // ✅ For SSR builds - CRITICAL FIX
         conditions: ["workerd", "worker", "browser"],
         externalConditions: ["workerd", "worker"],
       },
