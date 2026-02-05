@@ -1,7 +1,7 @@
 import type { AppLoadContext } from "@remix-run/cloudflare";
 import type { PlatformProxy } from "wrangler";
 
-interface Env {
+export interface Env {
   SESSION_KV: KVNamespace;
 }
 

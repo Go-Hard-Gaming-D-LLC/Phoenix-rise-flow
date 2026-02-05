@@ -8,6 +8,7 @@ import { PrismaSessionStorage } from "@shopify/shopify-app-session-storage-prism
 import { restResources } from "@shopify/shopify-api/rest/admin/2024-07";
 import db from "./db.server";
 import type { AppLoadContext } from "@remix-run/cloudflare";
+import type { Env } from "../load-context"; // Import Env type
 
 const shopify = shopifyApp({
   // 1. Edge Environment Variables
@@ -56,12 +57,12 @@ export const registerWebhooks = shopify.registerWebhooks;
 export const sessionStorage = shopify.sessionStorage;
 export const addDocumentResponseHeaders = shopify.addDocumentResponseHeaders;
 
-// ✅ NEW: Helper to access KV from context
+//  Helper to access KV from context
 export function getKV(context: AppLoadContext): KVNamespace {
-  return context.cloudflare.env.KV_BINDING;
+  return context.cloudflare.env.SESSION_KV;
 }
 
-// ✅ NEW: Helper to get all Cloudflare bindings
-export function getCloudflareEnv(context: AppLoadContext) {
+//  Helper to get all Cloudflare bindings
+export function getCloudflareEnv(context: AppLoadContext): Env {
   return context.cloudflare.env;
 }

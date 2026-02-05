@@ -4,12 +4,16 @@ import { useLoaderData, useFetcher } from "@remix-run/react";
 import { authenticate } from "../shopify.server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// 1. Server-Side: Securely get API Key
+// 1. Server-Side: Securely get API Key with proper Cloudflare context
 export const loader = async ({ request, context }: LoaderFunctionArgs) => {
   await authenticate.admin(request);
-  // COMPATIBILITY: Try context.env (Cloudflare) then process.env (Node/Polyfill)
-  const env = (context as any).cloudflare?.env || (context as any).env || process.env;
-  return json({ apiKey: env.GEMINI_API_KEY || "" });
+  
+  // ✅ FIXED: Proper Cloudflare context access
+  const env = context.cloudflare?.env || process.env;
+  
+  return json({ 
+    apiKey: env.GEMINI_API_KEY || "" 
+  });
 };
 
 export default function Index() {
