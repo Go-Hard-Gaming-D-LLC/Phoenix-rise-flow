@@ -13,5 +13,5 @@ SCOPES = "read_products,write_products,write_content"
 
 [[kv_namespaces]]
 binding = "SESSION_KV"
-id = "SESSION_KV_ID" # Replace with your actual KV ID from the dashboard
+id = "00d8647454174cfe8b5feb6e0023c698"
 
