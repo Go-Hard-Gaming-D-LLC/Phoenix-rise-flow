@@ -23,7 +23,8 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: shopifyAlias, // ✅ For client builds
     },
-    plugins: [
+   plugins: [
+      cloudflareDevProxyVitePlugin(), // ✅ MUST BE FIRST - before remix()
       remix({
         future: {
           v3_fetcherPersist: true,
@@ -34,7 +35,6 @@ export default defineConfig(({ mode }) => {
         },
         ignoredRouteFiles: ["**/.*"],
       }),
-      cloudflareDevProxyVitePlugin(), // ✅ Moved after remix()
       tsconfigPaths(),
     ],
     build: {
