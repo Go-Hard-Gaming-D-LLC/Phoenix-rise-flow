@@ -7,15 +7,15 @@ import {
 import { KvSessionStorage } from "./utils/kv-session-storage";
 import { restResources } from "@shopify/shopify-api/rest/admin/2024-07";
 import type { AppLoadContext } from "@remix-run/cloudflare";
-import type { Env } from "../load-context"; // Import Env type
+import type { Env } from "../load-context";
 
 type EnvContext = { cloudflare?: { env: Env } } | { env: Env };
 
 declare global {
-  // Set per-request in functions/[[path]].ts for Pages.
   var __CF_ENV: Env | undefined;
 }
 
+// ✅ CLINICAL AUDIT: Precise environment resolution
 function resolveEnv(context?: EnvContext): Env {
   const env =
     (context as { cloudflare?: { env: Env } } | undefined)?.cloudflare?.env ??
@@ -24,7 +24,18 @@ function resolveEnv(context?: EnvContext): Env {
 
   if (!env) {
     throw new Error(
-      "Missing Cloudflare env. Ensure bindings are available and set in Pages/Workers."
+      "❌ CRITICAL: Missing Cloudflare env. Handshake aborted."
+    );
+  }
+
+  // ✅ HANDSHAKE VERIFICATION: Checks for the specific crash cause
+  const missingKeys = [];
+  if (!env.SHOPIFY_API_KEY) missingKeys.push("SHOPIFY_API_KEY");
+  if (!env.SHOPIFY_API_SECRET) missingKeys.push("SHOPIFY_API_SECRET");
+  
+  if (missingKeys.length > 0) {
+    throw new Error(
+      `❌ SHADOW'S FORGE ENGINE FAILURE: Missing bindings: ${missingKeys.join(", ")}. Verify Cloudflare Pages Secrets.`
     );
   }
 
@@ -32,10 +43,10 @@ function resolveEnv(context?: EnvContext): Env {
 }
 
 function createShopify(env: Env) {
-  const shopify = shopifyApp({
+  return shopifyApp({
     // 1. Edge Environment Variables
-    apiKey: env.SHOPIFY_API_KEY || "",
-    apiSecretKey: env.SHOPIFY_API_SECRET || "",
+    apiKey: env.SHOPIFY_API_KEY,
+    apiSecretKey: env.SHOPIFY_API_SECRET,
     apiVersion: LATEST_API_VERSION,
     scopes: env.SCOPES?.split(",") || ["read_products", "write_products", "write_content"],
     appUrl: env.SHOPIFY_APP_URL || "https://ironphoenixflow.com",
@@ -61,17 +72,15 @@ function createShopify(env: Env) {
     hooks: {
       afterAuth: async ({ session }) => {
         // Automatic skill registration on the Edge
+        const shopify = getShopify();
         shopify.registerWebhooks({ session });
       },
     },
 
-    // 4. Future-Proof Stability
     future: {
       unstable_newEmbeddedAuthStrategy: true,
     },
   });
-
-  return shopify;
 }
 
 let shopifySingleton: ReturnType<typeof shopifyApp> | undefined;
@@ -83,57 +92,25 @@ export function getShopify(context?: EnvContext) {
   return shopifySingleton;
 }
 
-const shopifyProxy = new Proxy(
-  {},
-  {
-    get(_target, prop) {
-      return (getShopify() as any)[prop];
-    },
-  }
-) as ReturnType<typeof shopifyApp>;
+// Proxies for clean external access
+const shopifyProxy = new Proxy({}, {
+  get(_target, prop) { return (getShopify() as any)[prop]; },
+}) as ReturnType<typeof shopifyApp>;
 
 export default shopifyProxy;
 
-export const authenticate = new Proxy(
-  {},
-  {
-    get(_target, prop) {
-      return (getShopify() as any).authenticate[prop];
-    },
-  }
-) as ReturnType<typeof shopifyApp>["authenticate"];
+export const authenticate = new Proxy({}, {
+  get(_target, prop) { return (getShopify() as any).authenticate[prop]; },
+}) as ReturnType<typeof shopifyApp>["authenticate"];
 
-export const unauthenticated = new Proxy(
-  {},
-  {
-    get(_target, prop) {
-      return (getShopify() as any).unauthenticated[prop];
-    },
-  }
-) as ReturnType<typeof shopifyApp>["unauthenticated"];
+export const unauthenticated = new Proxy({}, {
+  get(_target, prop) { return (getShopify() as any).unauthenticated[prop]; },
+}) as ReturnType<typeof shopifyApp>["unauthenticated"];
 
-export function login(request: Request) {
-  return getShopify().login(request);
-}
-
-export function registerWebhooks(args: Parameters<ReturnType<typeof shopifyApp>["registerWebhooks"]>[0]) {
-  return getShopify().registerWebhooks(args);
-}
-
-export function sessionStorage() {
-  return getShopify().sessionStorage;
-}
-
-export function addDocumentResponseHeaders(request: Request, headers: Headers) {
-  return getShopify().addDocumentResponseHeaders(request, headers);
-}
-
-//  Helper to access KV from context
-export function getKV(context: AppLoadContext): KVNamespace {
-  return context.cloudflare.env.SESSION_KV;
-}
-
-//  Helper to get all Cloudflare bindings
-export function getCloudflareEnv(context: AppLoadContext): Env {
-  return context.cloudflare.env;
-}
+// Helper Methods
+export function login(request: Request) { return getShopify().login(request); }
+export function registerWebhooks(args: Parameters<ReturnType<typeof shopifyApp>["registerWebhooks"]>[0]) { return getShopify().registerWebhooks(args); }
+export function sessionStorage() { return getShopify().sessionStorage; }
+export function addDocumentResponseHeaders(request: Request, headers: Headers) { return getShopify().addDocumentResponseHeaders(request, headers); }
+export function getKV(context: AppLoadContext): KVNamespace { return context.cloudflare.env.SESSION_KV; }
+export function getCloudflareEnv(context: AppLoadContext): Env { return context.cloudflare.env; }
