@@ -1,11 +1,12 @@
 import { type ActionFunctionArgs } from "@remix-run/cloudflare";
 import shopify from "../shopify.server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { requireGeminiApiKey } from "../utils/env.server";
 
 export const action = async ({ request, context }: ActionFunctionArgs) => {
   const { admin } = await shopify.authenticate.admin(request);
-  const env = (context as any).cloudflare?.env || (context as any).env || process.env;
-  const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY || "");
+  const apiKey = requireGeminiApiKey(context);
+  const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
   try {

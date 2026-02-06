@@ -5,12 +5,12 @@ import { analyzeProductData, generateJSONLD } from "../gemini.server";
 import { sendDeveloperAlert } from "../utils/developerAlert"; // Developer Alert Import
 import { getUserTier, canAccessFeature, hasReachedLimit } from "../utils/tierConfig"; // Tier Logic
 import { getPrisma } from "../db.server";
+import { requireGeminiApiKey } from "../utils/env.server";
 
 export const action = async ({ request, context }: ActionFunctionArgs) => {
     const { admin, session } = await authenticate.admin(request);
     const db = getPrisma(context);
-    const env = (context as any).cloudflare?.env || (context as any).env || process.env;
-    const apiKey = env.GEMINI_API_KEY;
+    const apiKey = requireGeminiApiKey(context);
 
     const formData = await request.formData();
     const mode = formData.get("mode");

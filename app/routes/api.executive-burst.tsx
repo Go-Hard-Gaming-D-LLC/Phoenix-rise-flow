@@ -1,6 +1,7 @@
 import { json, type ActionFunctionArgs } from "@remix-run/cloudflare";
 import { authenticate } from "../shopify.server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { requireGeminiApiKey } from "../utils/env.server";
 
 // SYSTEM ROLE: PHOENIX FLOW EXECUTIVE ENGINE (CONTENT BURST)
 // FUNCTION: Batch Processor for Titles & Descriptions.
@@ -10,8 +11,8 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
   const { admin } = await authenticate.admin(request);
 
   // ENFORCEMENT: Use Cloudflare context for the API key (No process.env)
-  const env = (context as any).cloudflare?.env || (context as any).env || process.env;
-  const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY || "");
+  const apiKey = requireGeminiApiKey(context);
+  const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
   try {

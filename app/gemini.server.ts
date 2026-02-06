@@ -5,6 +5,7 @@
 //   throw new Error("GEMINI_API_KEY must be set in environment variables");
 // }
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
+import { requireGeminiApiKey } from "./utils/env.server";
 
 // ============================================================
 // PART 1: THE SAFETY LAYER (Singleton Pattern)
@@ -13,7 +14,7 @@ import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/ge
 let geminiClient: GoogleGenerativeAI | undefined;
 
 function getGeminiClient(apiKey?: string) {
-  const key = apiKey || process.env.GEMINI_API_KEY;
+  const key = apiKey || requireGeminiApiKey();
   if (!key) {
     // Graceful fallback or error
     console.error("❌ GEMINI_API_KEY is missing/undefined");
@@ -56,11 +57,12 @@ const safetySettings = [
   },
 ];
 
-// Initialize the model securely with Pro and NO filters
-const model = getGeminiClient().getGenerativeModel({
-  model: 'gemini-1.5-pro',
-  safetySettings: safetySettings
-});
+function getDefaultModel() {
+  return getGeminiClient().getGenerativeModel({
+    model: 'gemini-1.5-pro',
+    safetySettings: safetySettings
+  });
+}
 
 
 // ============================================================
@@ -107,6 +109,7 @@ export async function generatePhoenixContent(productName: string, features: stri
       
       CONSTRAINT: DO NOT include any meta-talk, explanations, or Markdown blocks. Return ONLY the raw HTML string.
     `;
+    const model = getDefaultModel();
     const result = await model.generateContent(prompt);
     const response = await result.response;
     return response.text().replace(/```html|```/g, "").trim();
@@ -135,6 +138,7 @@ export async function generateAltText(productName: string, brandContext?: string
       
       OUTPUT: Single plain text string.
     `;
+    const model = getDefaultModel();
     const result = await model.generateContent(prompt);
     return result.response.text().trim();
   } catch (error) {
@@ -292,6 +296,7 @@ OUTPUT: Valid JSON array ONLY.
   }
 
   try {
+    const model = getDefaultModel();
     const result = await model.generateContent(prompt);
     let responseText = result.response.text();
 
@@ -327,6 +332,7 @@ export async function ignitePhoenix(prompt: string, context: string = 'General S
     const systemPrompt = `You are Phoenix Flow, a specialized Shopify Merchant Co-Pilot. Current Context: ${context}. Response format: Concise, actionable advice.`;
 
     // Using the existing model instance
+    const model = getDefaultModel();
     const result = await model.generateContent([systemPrompt, prompt]);
     const response = await result.response;
     return response.text();

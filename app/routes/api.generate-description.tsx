@@ -4,6 +4,7 @@ import shopify from "../shopify.server";
 import { getPrisma } from "../db.server";
 import { generateAIContent } from "../gemini.server";
 import { getUserTier } from "../utils/tierConfig";
+import { requireGeminiApiKey } from "../utils/env.server";
 
 export const action = async ({ request, context }: ActionFunctionArgs) => {
     // 1. Authenticate with Shopify
@@ -11,10 +12,7 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
     const db = getPrisma(context);
 
     // 2. Initialize AI with Cloudflare context
-    const env = (context as any).cloudflare?.env || (context as any).env || process.env;
-    if (!env.GEMINI_API_KEY) {
-        return json({ error: "API Key missing in environment. Ensure it is set in the Cloudflare Dashboard." }, { status: 500 });
-    }
+    requireGeminiApiKey(context);
 
     // 3. Parse form data
     const formData = await request.formData();

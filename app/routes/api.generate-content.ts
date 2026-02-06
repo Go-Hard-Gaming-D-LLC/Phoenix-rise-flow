@@ -2,6 +2,7 @@ import { json, type ActionFunctionArgs } from "@remix-run/cloudflare";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import shopify from "../shopify.server";
 import { getPrisma } from "../db.server";
+import { requireGeminiApiKey } from "../utils/env.server";
 
 // const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || ""); // Moved inside action
 
@@ -17,8 +18,8 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
   const db = getPrisma(context);
 
   // Initialize AI with context (Cloudflare) or fallback
-  const env = (context as any).cloudflare?.env || (context as any).env || process.env;
-  const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY || "");
+  const apiKey = requireGeminiApiKey(context);
+  const genAI = new GoogleGenerativeAI(apiKey);
 
   // Fetch store configuration from Prisma
   const config = await db.configuration.findUnique({ where: { shop: session.shop } });
