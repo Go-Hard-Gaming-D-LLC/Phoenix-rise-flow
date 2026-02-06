@@ -1,7 +1,7 @@
 import { json, type ActionFunctionArgs } from "@remix-run/cloudflare";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import shopify from "../shopify.server";
-import db from "../db.server";
+import { getPrisma } from "../db.server";
 
 // const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || ""); // Moved inside action
 
@@ -14,6 +14,7 @@ interface GenerateContentBody {
 
 export const action = async ({ request, context }: ActionFunctionArgs) => {
   const { session } = await shopify.authenticate.admin(request);
+  const db = getPrisma(context);
 
   // Initialize AI with context (Cloudflare) or fallback
   const env = (context as any).cloudflare?.env || (context as any).env || process.env;

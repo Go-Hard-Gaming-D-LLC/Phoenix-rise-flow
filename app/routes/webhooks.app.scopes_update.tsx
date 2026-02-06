@@ -1,11 +1,12 @@
 import type { ActionFunctionArgs } from "@remix-run/cloudflare";
 import { authenticate } from "../shopify.server";
-import db from "../db.server";
+import { getPrisma } from "../db.server";
 import { sendDeveloperAlert } from "../utils/developerAlert";
 
-export const action = async ({ request }: ActionFunctionArgs) => {
+export const action = async ({ request, context }: ActionFunctionArgs) => {
   // 1. Authenticate the Webhook
   const { payload, topic, shop } = await authenticate.webhook(request);
+  const db = getPrisma(context);
 
   console.log(`[Webhook] Received ${topic} for ${shop}`);
 

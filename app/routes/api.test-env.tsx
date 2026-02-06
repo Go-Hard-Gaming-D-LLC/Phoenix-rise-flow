@@ -1,10 +1,11 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/cloudflare";
 import { authenticate } from "../shopify.server";
-import db from "../db.server";
+import { getPrisma } from "../db.server";
 
 export const loader = async ({ request, context }: LoaderFunctionArgs) => {
     const { session } = await authenticate.admin(request);
     const shop = session.shop;
+    const db = getPrisma(context);
 
     // Retrieve Edge Environment
     const env = (context as any).cloudflare?.env || (context as any).env || process.env;

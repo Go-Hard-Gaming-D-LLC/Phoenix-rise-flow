@@ -2,10 +2,11 @@ import { json, type LoaderFunctionArgs } from "@remix-run/cloudflare";
 import { useLoaderData } from "@remix-run/react";
 import { Page, Layout, Card, ResourceList, ResourceItem, Text, Badge, BlockStack } from "@shopify/polaris";
 import { authenticate } from "../shopify.server";
-import db from "../db.server";
+import { getPrisma } from "../db.server";
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
+export const loader = async ({ request, context }: LoaderFunctionArgs) => {
     const { session } = await authenticate.admin(request);
+    const db = getPrisma(context);
 
     // Fetch the truth from the ledger 
     const history = await db.optimizationHistory.findMany({

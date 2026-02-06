@@ -4,10 +4,11 @@ import { authenticate } from "../shopify.server";
 import { analyzeProductData, generateJSONLD } from "../gemini.server";
 import { sendDeveloperAlert } from "../utils/developerAlert"; // Developer Alert Import
 import { getUserTier, canAccessFeature, hasReachedLimit } from "../utils/tierConfig"; // Tier Logic
-import db from "../db.server";
+import { getPrisma } from "../db.server";
 
 export const action = async ({ request, context }: ActionFunctionArgs) => {
     const { admin, session } = await authenticate.admin(request);
+    const db = getPrisma(context);
     const env = (context as any).cloudflare?.env || (context as any).env || process.env;
     const apiKey = env.GEMINI_API_KEY;
 
@@ -29,7 +30,7 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
         const shop = session.shop;
 
         // 1. Get Tier & Check Feature Access
-        const userTier = await getUserTier(shop);
+        const userTier = await getUserTier(context, shop);
         if (!canAccessFeature(userTier, 'bulk_analyzer')) {
             return json({ error: "Please upgrade to Starter to use Bulk Analyzer" }, { status: 403 });
         }

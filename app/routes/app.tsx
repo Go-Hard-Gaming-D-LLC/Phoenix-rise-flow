@@ -5,14 +5,15 @@ import { AppProvider } from "@shopify/shopify-app-remix/react";
 import { NavMenu } from "@shopify/app-bridge-react";
 import polarisStyles from "@shopify/polaris/build/esm/styles.css?url";
 import { authenticate } from "../shopify.server";
-import db from "../db.server";
+import { getPrisma } from "../db.server";
 import LockdownUI from "../components/LockdownUI";
 
 export const links = () => [{ rel: "stylesheet", href: polarisStyles }];
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
+export const loader = async ({ request, context }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request); // Get session data
   const shop = session.shop;
+  const db = getPrisma(context);
 
   // --- ANTI-CHURN CHECK ---
   let isLocked = false;

@@ -1,13 +1,14 @@
 import { json, type ActionFunctionArgs } from "@remix-run/cloudflare";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import shopify from "../shopify.server";
-import db from "../db.server";
+import { getPrisma } from "../db.server";
 import { generateAIContent } from "../gemini.server";
 import { getUserTier } from "../utils/tierConfig";
 
 export const action = async ({ request, context }: ActionFunctionArgs) => {
     // 1. Authenticate with Shopify
     const { admin, session } = await shopify.authenticate.admin(request);
+    const db = getPrisma(context);
 
     // 2. Initialize AI with Cloudflare context
     const env = (context as any).cloudflare?.env || (context as any).env || process.env;
@@ -31,7 +32,7 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
     });
 
     // 5. Get User Tier for Rate Limiting
-    const userTier = await getUserTier(session.shop);
+    const userTier = await getUserTier(context, session.shop);
 
     try {
         // 6. Call the Elite Phoenix Engine with Full Context

@@ -3,7 +3,7 @@
  * Track feature usage per shop for billing
  */
 
-import db from "../db.server";
+import { getPrisma, type Env } from "../db.server";
 
 export interface UsageStats {
   descriptionsThisMonth: number;
@@ -15,7 +15,8 @@ export interface UsageStats {
 /**
  * Get current month's usage for a shop
  */
-export async function getMonthlyUsage(shop: string): Promise<UsageStats> {
+export async function getMonthlyUsage(context: { env: Env }, shop: string): Promise<UsageStats> {
+  const db = getPrisma(context);
   const startOfMonth = new Date();
   startOfMonth.setDate(1);
   startOfMonth.setHours(0, 0, 0, 0);
@@ -61,6 +62,7 @@ export async function getMonthlyUsage(shop: string): Promise<UsageStats> {
  * Check if user can perform an action based on their tier and usage
  */
 export async function canPerformAction(
+  context: { env: Env },
   shop: string,
   userTier: string,
   actionType: 'description' | 'ad' | 'music_video'
@@ -72,7 +74,7 @@ export async function canPerformAction(
     return { allowed: false, reason: "Invalid tier" };
   }
 
-  const usage = await getMonthlyUsage(shop);
+  const usage = await getMonthlyUsage(context, shop);
 
   // Map action type to limit type
   const limitMap = {
@@ -105,10 +107,12 @@ export async function canPerformAction(
  * Record usage of a feature
  */
 export async function recordUsage(
+  context: { env: Env },
   shop: string,
   actionType: 'description' | 'ad' | 'music_video',
   metadata?: Record<string, any>
 ): Promise<void> {
+  const db = getPrisma(context);
   const typeMap = {
     description: 'bulk_analysis',
     ad: 'product_ad',
@@ -131,10 +135,10 @@ export async function recordUsage(
 /**
  * Get usage summary with overage calculations
  */
-export async function getUsageSummary(shop: string, userTier: string) {
+export async function getUsageSummary(context: { env: Env }, shop: string, userTier: string) {
   const { TIERS, calculateOverage } = await import('./tierConfig');
   const tier = TIERS[userTier];
-  const usage = await getMonthlyUsage(shop);
+  const usage = await getMonthlyUsage(context, shop);
 
   const descriptionOverage = calculateOverage(
     userTier,

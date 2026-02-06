@@ -23,7 +23,9 @@
   },
   "dependencies": {
     "@google/generative-ai": "^0.7.1",
-    "@prisma/client": "^6.0.0",
+    "@prisma/adapter-d1": "^7.3.0",
+    "@prisma/adapter-pg": "^7.3.0",
+    "@prisma/client": "^6.19.2",
     "@remix-run/cloudflare": "^2.17.4",
     "@remix-run/react": "^2.17.4",
     "@shopify/app-bridge-react": "^4.0.0",
@@ -33,6 +35,7 @@
     "@shopify/shopify-app-session-storage-prisma": "^8.0.1",
     "bottleneck": "^2.19.5",
     "package-name": "^0.1.0",
+    "pg": "^8.18.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
@@ -48,7 +51,7 @@
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
     "miniflare": "^4.20260131.0",
-    "prisma": "^6.0.0",
+    "prisma": "^6.19.2",
     "typescript": "~5.6.2",
     "vite": "^5.4.21",
     "vite-tsconfig-paths": "^6.0.5",

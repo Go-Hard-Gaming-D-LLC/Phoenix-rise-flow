@@ -4,9 +4,8 @@ import {
   shopifyApp,
   LATEST_API_VERSION,
 } from "@shopify/shopify-app-remix/server";
-import { PrismaSessionStorage } from "@shopify/shopify-app-session-storage-prisma";
+import { KvSessionStorage } from "./utils/kv-session-storage";
 import { restResources } from "@shopify/shopify-api/rest/admin/2024-07";
-import db from "./db.server";
 import type { AppLoadContext } from "@remix-run/cloudflare";
 import type { Env } from "../load-context"; // Import Env type
 
@@ -20,7 +19,7 @@ const shopify = shopifyApp({
   authPathPrefix: "/auth",
   
   // 2. Persistent Truth Table Storage
-  sessionStorage: new PrismaSessionStorage(db) as any,
+  sessionStorage: new KvSessionStorage(),
   distribution: AppDistribution.AppStore,
   restResources,
 

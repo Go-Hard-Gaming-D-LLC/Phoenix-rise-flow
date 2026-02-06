@@ -1,9 +1,10 @@
 import type { ActionFunctionArgs } from "@remix-run/cloudflare";
 import { authenticate } from "../shopify.server";
-import db from "../db.server";
+import { getPrisma } from "../db.server";
 
-export const action = async ({ request }: ActionFunctionArgs) => {
+export const action = async ({ request, context }: ActionFunctionArgs) => {
   const { shop, session } = await authenticate.webhook(request);
+  const db = getPrisma(context);
 
   if (session) {
     // 1. Lock the churn data before wiping the session

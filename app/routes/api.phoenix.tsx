@@ -1,6 +1,6 @@
 import { json, type ActionFunctionArgs } from "@remix-run/cloudflare";
 import { authenticate } from "../shopify.server";
-import db from "../db.server"; // Prisma connection
+import { getPrisma } from "../db.server"; // Prisma connection
 import { analyzeProductData } from "../gemini.server";
 
 interface PhoenixRequestBody {
@@ -11,6 +11,7 @@ interface PhoenixRequestBody {
 
 export const action = async ({ request, context }: ActionFunctionArgs) => {
   const { admin, session } = await authenticate.admin(request);
+  const db = getPrisma(context);
   const shop = session.shop;
   const contentType = request.headers.get("Content-Type") || "";
 

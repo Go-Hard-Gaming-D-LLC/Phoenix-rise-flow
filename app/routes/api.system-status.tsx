@@ -1,10 +1,11 @@
 import { json, type ActionFunctionArgs } from "@remix-run/cloudflare";
 import { authenticate } from "../shopify.server";
-import db from "../db.server";
+import { getPrisma } from "../db.server";
 
-export const action = async ({ request }: ActionFunctionArgs) => {
+export const action = async ({ request, context }: ActionFunctionArgs) => {
     const { admin, session } = await authenticate.admin(request);
     const shop = session.shop;
+    const db = getPrisma(context);
 
     try {
         // 1. Database Integrity Check
