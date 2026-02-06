@@ -5,12 +5,14 @@ import { analyzeProductData, generateJSONLD } from "../gemini.server";
 import { sendDeveloperAlert } from "../utils/developerAlert"; // Developer Alert Import
 import { getUserTier, canAccessFeature, hasReachedLimit } from "../utils/tierConfig"; // Tier Logic
 import { getPrisma } from "../db.server";
-import { requireGeminiApiKey } from "../utils/env.server";
+import { resolveGeminiApiKey } from "../utils/env.server";
+import { recordUsage } from "../utils/usageTracker";
 
 export const action = async ({ request, context }: ActionFunctionArgs) => {
     const { admin, session } = await authenticate.admin(request);
     const db = getPrisma(context);
-    const apiKey = requireGeminiApiKey(context);
+    const config = await db.configuration.findUnique({ where: { shop: session.shop } });
+    const apiKey = resolveGeminiApiKey(context, config?.geminiApiKey || undefined);
 
     const formData = await request.formData();
     const mode = formData.get("mode");
@@ -57,6 +59,7 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
         // Also generate the Schema Shield (JSON-LD) to fix GMC flags
         const schema = await generateJSONLD(analysis.optimized_title, "19.99", "USD", apiKey);
 
+        await recordUsage(context, shop, "description", { type: "bulk_analyze" });
         return json({ analysis, schema });
     }
 

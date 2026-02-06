@@ -5,7 +5,7 @@
 //   throw new Error("GEMINI_API_KEY must be set in environment variables");
 // }
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
-import { requireGeminiApiKey } from "./utils/env.server";
+import { resolveGeminiApiKey } from "./utils/env.server";
 
 // ============================================================
 // PART 1: THE SAFETY LAYER (Singleton Pattern)
@@ -14,7 +14,7 @@ import { requireGeminiApiKey } from "./utils/env.server";
 let geminiClient: GoogleGenerativeAI | undefined;
 
 function getGeminiClient(apiKey?: string) {
-  const key = apiKey || requireGeminiApiKey();
+  const key = resolveGeminiApiKey(undefined, apiKey);
   if (!key) {
     // Graceful fallback or error
     console.error("❌ GEMINI_API_KEY is missing/undefined");
@@ -160,6 +160,7 @@ interface GenerateContentParams {
   usp?: string;
   shop?: string;
   userTier?: string;
+  apiKey?: string;
 }
 
 export async function generateAIContent(params: GenerateContentParams) {
@@ -170,7 +171,8 @@ export async function generateAIContent(params: GenerateContentParams) {
     targetAudience,
     brandContext = "your brand",
     identitySummary,
-    usp
+    usp,
+    apiKey
   } = params;
 
   let prompt = "";
@@ -297,6 +299,11 @@ OUTPUT: Valid JSON array ONLY.
 
   try {
     const model = getDefaultModel();
+    const client = getGeminiClient(apiKey);
+    const model = client.getGenerativeModel({
+      model: 'gemini-1.5-pro',
+      safetySettings: safetySettings
+    });
     const result = await model.generateContent(prompt);
     let responseText = result.response.text();
 

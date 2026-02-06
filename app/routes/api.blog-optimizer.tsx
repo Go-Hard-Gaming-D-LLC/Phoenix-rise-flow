@@ -1,13 +1,24 @@
 import { type ActionFunctionArgs } from "@remix-run/cloudflare";
 import shopify from "../shopify.server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { requireGeminiApiKey } from "../utils/env.server";
+import { resolveGeminiApiKey } from "../utils/env.server";
+import { getPrisma } from "../db.server";
+import { getUserTier } from "../utils/tierConfig";
+import { canPerformAction, recordUsage } from "../utils/usageTracker";
 
 export const action = async ({ request, context }: ActionFunctionArgs) => {
-  const { admin } = await shopify.authenticate.admin(request);
-  const apiKey = requireGeminiApiKey(context);
+  const { admin, session } = await shopify.authenticate.admin(request);
+  const shop = session.shop;
+  const db = getPrisma(context);
+  const config = await db.configuration.findUnique({ where: { shop } });
+  const apiKey = resolveGeminiApiKey(context, config?.geminiApiKey || undefined);
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  const userTier = await getUserTier(context, shop);
+  const allowed = await canPerformAction(context, shop, userTier, "description");
+  if (!allowed.allowed) {
+    return Response.json({ error: allowed.reason || "Monthly limit reached" }, { status: 403 });
+  }
 
   try {
     // 1. FETCH: Grab all active blog posts
@@ -67,6 +78,8 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
         }
       );
     }
+
+    await recordUsage(context, shop, "description", { type: "blog_optimizer" });
 
     return Response.json({ status: "SUCCESS", merged: auditData.mergeGroups.length });
 

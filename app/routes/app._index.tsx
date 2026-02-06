@@ -3,17 +3,16 @@ import { json, type LoaderFunctionArgs } from "@remix-run/cloudflare";
 import { useLoaderData, useFetcher } from "@remix-run/react";
 import { authenticate } from "../shopify.server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { requireGeminiApiKey } from "../utils/env.server";
+import { getPrisma } from "../db.server";
 
 // 1. Server-Side: Securely get API Key with proper Cloudflare context
 export const loader = async ({ request, context }: LoaderFunctionArgs) => {
-  await authenticate.admin(request);
-  
-  // ✅ FIXED: Proper Cloudflare context access
-  const apiKey = requireGeminiApiKey(context);
+  const { session } = await authenticate.admin(request);
+  const db = getPrisma(context);
+  const config = await db.configuration.findUnique({ where: { shop: session.shop } });
 
   return json({ 
-    apiKey 
+    apiKey: config?.geminiApiKey || "" 
   });
 };
 
@@ -36,24 +35,24 @@ export default function Index() {
   // --- CLIENT-SIDE AI (Text) ---
   const [genAI, setGenAI] = useState<GoogleGenerativeAI | null>(null);
 
-  useEffect(() => {
-    if (apiKey) {
+  const runAction = async (type: 'identity' | 'audit' | 'editor') => {
+    if (!apiKey) return alert("AI Service is not configured. Please contact support.");
+    let client = genAI;
+    if (!client) {
       try {
-        setGenAI(new GoogleGenerativeAI(apiKey));
+        client = new GoogleGenerativeAI(apiKey);
+        setGenAI(client);
       } catch (e) {
         console.error("Failed to initialize Google AI:", e);
+        return alert("AI Service is causing an initialization error (Missing Key). check console.");
       }
     }
-  }, [apiKey]);
-
-  const runAction = async (type: 'identity' | 'audit' | 'editor') => {
-    if (!genAI) return alert("AI Service is causing an initialization error (Missing Key). check console.");
     if (type !== 'editor' && !config.shopifyUrl) return alert("Please enter a Shop URL first.");
 
     setLoading(prev => ({ ...prev, [type]: true }));
 
     try {
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const model = client.getGenerativeModel({ model: "gemini-1.5-flash" });
 
       let prompt = "";
       if (type === 'identity') prompt = `Analyze ${config.shopifyUrl}.JSON: { "summary": "...", "targetAudience": "...", "usp": "..." } `;

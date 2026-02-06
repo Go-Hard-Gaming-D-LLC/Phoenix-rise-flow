@@ -1,18 +1,15 @@
 import { json, type ActionFunctionArgs } from "@remix-run/cloudflare";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import shopify from "../shopify.server";
 import { getPrisma } from "../db.server";
 import { generateAIContent } from "../gemini.server";
 import { getUserTier } from "../utils/tierConfig";
-import { requireGeminiApiKey } from "../utils/env.server";
+import { resolveGeminiApiKey } from "../utils/env.server";
+import { canPerformAction, recordUsage } from "../utils/usageTracker";
 
 export const action = async ({ request, context }: ActionFunctionArgs) => {
     // 1. Authenticate with Shopify
     const { admin, session } = await shopify.authenticate.admin(request);
     const db = getPrisma(context);
-
-    // 2. Initialize AI with Cloudflare context
-    requireGeminiApiKey(context);
 
     // 3. Parse form data
     const formData = await request.formData();
@@ -31,6 +28,12 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
 
     // 5. Get User Tier for Rate Limiting
     const userTier = await getUserTier(context, session.shop);
+    const allowed = await canPerformAction(context, session.shop, userTier, 'description');
+    if (!allowed.allowed) {
+        return json({ error: allowed.reason || "Monthly limit reached" }, { status: 403 });
+    }
+
+    const apiKey = resolveGeminiApiKey(context, config?.geminiApiKey || undefined);
 
     try {
         // 6. Call the Elite Phoenix Engine with Full Context
@@ -43,8 +46,11 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
             targetAudience: config?.targetAudience || "your ideal customer",
             usp: config?.usp || undefined,
             shop: session.shop,
-            userTier
+            userTier,
+            apiKey
         });
+
+        await recordUsage(context, session.shop, 'description', { productName });
 
         return json(result);
 

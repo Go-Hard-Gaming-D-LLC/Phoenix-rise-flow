@@ -41,6 +41,7 @@ model Configuration {
   identitySummary String?
   targetAudience  String?
   usp             String?
+  geminiApiKey    String?   @db.Text
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 

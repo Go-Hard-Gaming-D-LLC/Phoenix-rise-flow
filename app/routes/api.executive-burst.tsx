@@ -1,19 +1,30 @@
 import { json, type ActionFunctionArgs } from "@remix-run/cloudflare";
 import { authenticate } from "../shopify.server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { requireGeminiApiKey } from "../utils/env.server";
+import { resolveGeminiApiKey } from "../utils/env.server";
+import { getPrisma } from "../db.server";
+import { getUserTier } from "../utils/tierConfig";
+import { canPerformAction, recordUsage } from "../utils/usageTracker";
 
 // SYSTEM ROLE: PHOENIX FLOW EXECUTIVE ENGINE (CONTENT BURST)
 // FUNCTION: Batch Processor for Titles & Descriptions.
 // LIMIT: 40 Products.
 
 export const action = async ({ request, context }: ActionFunctionArgs) => {
-  const { admin } = await authenticate.admin(request);
+  const { admin, session } = await authenticate.admin(request);
+  const shop = session.shop;
+  const db = getPrisma(context);
+  const config = await db.configuration.findUnique({ where: { shop } });
 
   // ENFORCEMENT: Use Cloudflare context for the API key (No process.env)
-  const apiKey = requireGeminiApiKey(context);
+  const apiKey = resolveGeminiApiKey(context, config?.geminiApiKey || undefined);
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  const userTier = await getUserTier(context, shop);
+  const allowed = await canPerformAction(context, shop, userTier, "description");
+  if (!allowed.allowed) {
+    return json({ error: allowed.reason || "Monthly limit reached" }, { status: 403 });
+  }
 
   try {
     // 1. FETCH: Strictly limited to 5 products for Edge stability
@@ -106,6 +117,8 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
         report.push({ id: productStringId, status: "FAILED" });
       }
     }));
+
+    await recordUsage(context, shop, "description", { type: "executive_burst" });
 
     return json({
       mode: "scan",

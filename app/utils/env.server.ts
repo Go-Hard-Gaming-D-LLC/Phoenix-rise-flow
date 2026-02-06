@@ -22,7 +22,8 @@ export function getEnv(context?: EnvContext): Env {
   return env;
 }
 
-export function requireGeminiApiKey(context?: EnvContext): string {
+export function resolveGeminiApiKey(context?: EnvContext, overrideKey?: string): string {
+  if (overrideKey) return overrideKey;
   const env = getEnv(context);
   if (!env.GEMINI_API_KEY) {
     throw new Error(

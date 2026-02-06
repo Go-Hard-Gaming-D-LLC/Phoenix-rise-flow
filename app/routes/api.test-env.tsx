@@ -1,7 +1,7 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/cloudflare";
 import { authenticate } from "../shopify.server";
 import { getPrisma } from "../db.server";
-import { requireGeminiApiKey } from "../utils/env.server";
+import { resolveGeminiApiKey } from "../utils/env.server";
 
 export const loader = async ({ request, context }: LoaderFunctionArgs) => {
     const { session } = await authenticate.admin(request);
@@ -9,7 +9,7 @@ export const loader = async ({ request, context }: LoaderFunctionArgs) => {
     const db = getPrisma(context);
 
     // Retrieve Edge Environment
-    const apiKey = requireGeminiApiKey(context);
+    const apiKey = resolveGeminiApiKey(context);
 
     // Anti-Churn Logic: 6-Month Lockdown
     const churnRecord = await db.antiChurn.findUnique({ where: { shop } });

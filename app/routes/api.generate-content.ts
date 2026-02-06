@@ -2,7 +2,9 @@ import { json, type ActionFunctionArgs } from "@remix-run/cloudflare";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import shopify from "../shopify.server";
 import { getPrisma } from "../db.server";
-import { requireGeminiApiKey } from "../utils/env.server";
+import { resolveGeminiApiKey } from "../utils/env.server";
+import { getUserTier } from "../utils/tierConfig";
+import { canPerformAction, recordUsage } from "../utils/usageTracker";
 
 // const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || ""); // Moved inside action
 
@@ -17,17 +19,23 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
   const { session } = await shopify.authenticate.admin(request);
   const db = getPrisma(context);
 
-  // Initialize AI with context (Cloudflare) or fallback
-  const apiKey = requireGeminiApiKey(context);
-  const genAI = new GoogleGenerativeAI(apiKey);
-
   // Fetch store configuration from Prisma
   const config = await db.configuration.findUnique({ where: { shop: session.shop } });
+  const apiKey = resolveGeminiApiKey(context, config?.geminiApiKey || undefined);
+  const genAI = new GoogleGenerativeAI(apiKey);
   const brandContext = config?.brandName || "your brand";
 
   // Get request body to determine content type
   const body = (await request.json()) as GenerateContentBody;
   const { contentType, songTitle, productDetails, targetAudience } = body;
+  const userTier = await getUserTier(context, session.shop);
+  const actionType =
+    contentType === "music_video" ? "music_video" :
+    contentType === "product_ad" ? "ad" : "description";
+  const allowed = await canPerformAction(context, session.shop, userTier, actionType);
+  if (!allowed.allowed) {
+    return json({ success: false, error: allowed.reason || "Monthly limit reached" }, { status: 403 });
+  }
 
   const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
@@ -138,6 +146,12 @@ OUTPUT FORMAT: Valid JSON array:
     responseText = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
 
     const content = JSON.parse(responseText);
+
+    await recordUsage(context, session.shop, actionType, {
+      contentType,
+      songTitle,
+      productDetails
+    });
 
     return json({
       success: true,
