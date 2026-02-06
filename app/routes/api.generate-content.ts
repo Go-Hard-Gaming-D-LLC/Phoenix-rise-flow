@@ -5,6 +5,13 @@ import db from "../db.server";
 
 // const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || ""); // Moved inside action
 
+interface GenerateContentBody {
+  contentType: string;
+  songTitle?: string;
+  productDetails?: string;
+  targetAudience?: string;
+}
+
 export const action = async ({ request, context }: ActionFunctionArgs) => {
   const { session } = await shopify.authenticate.admin(request);
 
@@ -17,7 +24,7 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
   const brandContext = config?.brandName || "your brand";
 
   // Get request body to determine content type
-  const body = await request.json();
+  const body = (await request.json()) as GenerateContentBody;
   const { contentType, songTitle, productDetails, targetAudience } = body;
 
   const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });

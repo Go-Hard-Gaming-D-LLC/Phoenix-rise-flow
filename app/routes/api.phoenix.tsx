@@ -3,6 +3,12 @@ import { authenticate } from "../shopify.server";
 import db from "../db.server"; // Prisma connection
 import { analyzeProductData } from "../gemini.server";
 
+interface PhoenixRequestBody {
+  mode: string;
+  products?: Array<Record<string, any>>;
+  context?: string;
+}
+
 export const action = async ({ request, context }: ActionFunctionArgs) => {
   const { admin, session } = await authenticate.admin(request);
   const shop = session.shop;
@@ -21,7 +27,7 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
 
   try {
     if (contentType.includes("application/json")) {
-      const body = await request.json();
+      const body = (await request.json()) as PhoenixRequestBody;
       const { mode, products, context: userContext } = body;
 
       // --- MODE: SCAN (Strict 5-item limit) ---
@@ -40,7 +46,8 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
       if (mode === "analyze") {
         const results = [];
 
-        for (const product of products) {
+        const productList = Array.isArray(products) ? products : [];
+        for (const product of productList) {
           // 1. Execute High-Precision AI Analysis
           const aiData = await analyzeProductData(product, userContext);
 
@@ -76,7 +83,8 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
 
       // --- MODE: APPLY (Writing Fixes to Shopify) ---
       if (mode === "apply") {
-        for (const p of products) {
+        const productList = Array.isArray(products) ? products : [];
+        for (const p of productList) {
           const response = await admin.graphql(
             `#graphql
             mutation productUpdate($input: ProductInput!) {
@@ -111,7 +119,8 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
     }
     return json({ success: true });
   } catch (error: any) {
-    console.error("❌ PHOENIX ENGINE FAILURE:", error.message);
+    console.error("PHOENIX ENGINE FAILURE:", error.message);
     return json({ success: false, error: error.message }, { status: 500 });
   }
 };
+

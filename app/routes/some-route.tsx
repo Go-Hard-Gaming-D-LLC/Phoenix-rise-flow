@@ -2,7 +2,7 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/cloudflare";
 
 export async function loader({ context }: LoaderFunctionArgs) {
-  const kv = context.cloudflare.env.KV_BINDING;
+  const kv = context.cloudflare.env.SESSION_KV;
   
   // Read from KV
   const value = await kv.get("my-key");

@@ -1,4 +1,29 @@
 
+type ShopifyRestProductsResponse = {
+    products?: Array<{ id: string | number }>;
+};
+
+type ShopifyRestLinkListsResponse = {
+    link_lists?: any[];
+};
+
+type ShopifyRestThemesResponse = {
+    themes?: any[];
+};
+
+type ShopifyRestAssetResponse = {
+    asset?: { value?: string };
+};
+
+type ShopifyRestSmartCollectionsResponse = {
+    smart_collections?: any[];
+};
+
+type ShopifyGraphQLResponse<T> = {
+    data?: T;
+    errors?: Array<{ message: string }>;
+};
+
 export class ShopifyClient {
     private token: string;
     private domain: string;
@@ -53,9 +78,9 @@ export class ShopifyClient {
                 throw new Error(`Shopify API Error: ${response.statusText}`);
             }
 
-            const data = await response.json();
+            const data = (await response.json()) as ShopifyRestProductsResponse;
             if (data.products && data.products.length > 0) {
-                return data.products[0].id;
+                return String(data.products[0].id);
             }
             return null;
         } catch (error) {
@@ -125,7 +150,7 @@ export class ShopifyClient {
                 method: 'GET',
                 headers: this.getHeaders(),
             });
-            const data = await response.json();
+            const data = (await response.json()) as ShopifyRestLinkListsResponse;
             return data.link_lists || [];
         } catch (error) {
             console.error('Failed to get link lists:', error);
@@ -167,7 +192,7 @@ export class ShopifyClient {
                 method: 'GET',
                 headers: this.getHeaders(),
             });
-            const data = await response.json();
+            const data = (await response.json()) as ShopifyRestThemesResponse;
             return data.themes || [];
         } catch (error) {
             console.error('Failed to get themes:', error);
@@ -186,7 +211,7 @@ export class ShopifyClient {
                 method: 'GET',
                 headers: this.getHeaders(),
             });
-            const data = await response.json();
+            const data = (await response.json()) as ShopifyRestAssetResponse;
             return data.asset?.value || '';
         } catch (error) {
             console.error('Failed to get asset:', error);
@@ -237,7 +262,7 @@ export class ShopifyClient {
 
             const result = await this.updateAsset(mainTheme.id, 'layout/theme.liquid', newHtml);
             if (result) {
-                return { success: true, message: "✅ FIXED! Your site is now mobile-responsive." };
+                return { success: true, message: "Fixed: your site is now mobile-responsive." };
             } else {
                 return { success: false, message: "Failed to update theme asset." };
             }
@@ -258,7 +283,7 @@ export class ShopifyClient {
                 method: 'GET',
                 headers: this.getHeaders(),
             });
-            const data = await response.json();
+            const data = (await response.json()) as ShopifyRestSmartCollectionsResponse;
             return data.smart_collections || [];
         } catch (error) {
             console.error('Failed to get smart collections:', error);
@@ -317,7 +342,7 @@ export class ShopifyClient {
                 data: { query, variables }
             }),
         });
-        const data = await response.json();
+        const data = (await response.json()) as ShopifyGraphQLResponse<any>;
         if (data.errors) {
             throw new Error(JSON.stringify(data.errors));
         }
@@ -400,9 +425,9 @@ export class ShopifyClient {
 
             if (addedCount > 0) {
                 await this.updateLinkList(footer.id, newLinks);
-                return { success: true, message: `✅ Fixed ${missing.length} missing policies & added ${addedCount} links to Footer.` };
+                return { success: true, message: `Fixed ${missing.length} missing policies & added ${addedCount} links to Footer.` };
             } else {
-                return { success: true, message: "✅ Policies checked. Footer menu already up to date." };
+                return { success: true, message: "Policies checked. Footer menu already up to date." };
             }
 
         } catch (e: any) {
@@ -539,3 +564,4 @@ export class ShopifyClient {
         });
     }
 }
+

@@ -1,11 +1,20 @@
+// load-context.ts
 import type { AppLoadContext } from "@remix-run/cloudflare";
-import type { PlatformProxy } from "wrangler";
+import type { GetLoadContextFunction } from "@remix-run/cloudflare-pages";
 
 export interface Env {
+  // Cloudflare KV
   SESSION_KV: KVNamespace;
+
+  // Environment Variables
+  GEMINI_API_KEY: string;
+  SHOPIFY_API_KEY: string;
+  SHOPIFY_API_SECRET: string;
+  SHOPIFY_APP_URL: string;
+  SCOPES: string;
 }
 
-type Cloudflare = Omit<PlatformProxy<Env>, "dispose">;
+type Cloudflare = { env: Env } & Record<string, any>;
 
 declare module "@remix-run/cloudflare" {
   interface AppLoadContext {
@@ -13,14 +22,9 @@ declare module "@remix-run/cloudflare" {
   }
 }
 
-type GetLoadContext = (args: {
-  request: Request;
-  context: { cloudflare: Cloudflare };
-}) => AppLoadContext;
-
-export const getLoadContext: GetLoadContext = ({ context }) => {
+export const getLoadContext: GetLoadContextFunction<Env> = ({ context }) => {
   return {
     ...context,
     cloudflare: context.cloudflare,
-  };
+  } as AppLoadContext;
 };

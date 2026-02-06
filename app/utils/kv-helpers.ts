@@ -1,6 +1,6 @@
 // utils/kv-helpers.ts
 import type { AppLoadContext } from "@remix-run/cloudflare";
-import { getKV } from "~/shopify.server";
+import { getKV } from "../shopify.server";
 
 export async function getShopSettings(context: AppLoadContext, shop: string) {
   const kv = getKV(context);
