@@ -13,6 +13,7 @@ const handleRequest = createPagesFunctionHandler<Env>({
 }) as unknown as PagesFunction<Env>;
 
 export const onRequest: PagesFunction<Env> = (context) => {
+  (globalThis as any).__CF_ENV = context.env;
   setSessionKv(context.env.SESSION_KV);
   return handleRequest(context);
 };
