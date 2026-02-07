@@ -1,24 +1,23 @@
 import { PrismaClient } from "@prisma/client/edge";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { getEnv } from "./utils/env.server";
+import type { Env } from "../load-context";
 
-type HyperdriveBinding = {
-  connectionString: string;
-};
+export type EnvContext = { cloudflare?: { env: Env } } | { env: Env };
 
-export type Env = {
-  HYPERDRIVE: HyperdriveBinding;
-};
-
-function createPrisma(env: Env) {
-  if (!env?.HYPERDRIVE?.connectionString) {
+function resolveConnectionString(env: Env) {
+  const connectionString = env?.HYPERDRIVE?.connectionString ?? env?.DATABASE_URL;
+  if (!connectionString) {
     throw new Error(
-      "Missing env.HYPERDRIVE.connectionString. Check your Hyperdrive binding in wrangler."
+      "Missing database connection. Provide HYPERDRIVE.connectionString or DATABASE_URL."
     );
   }
+  return connectionString;
+}
 
-  const adapter = new PrismaPg({
-    connectionString: env.HYPERDRIVE.connectionString,
-  });
+function createPrisma(env: Env) {
+  const connectionString = resolveConnectionString(env);
+  const adapter = new PrismaPg({ connectionString });
 
   return new PrismaClient({
     adapter,
@@ -27,11 +26,12 @@ function createPrisma(env: Env) {
   });
 }
 
-export function getPrisma(context: { env: Env }) {
-  const anyContext = context as unknown as { __prisma?: PrismaClient; env: Env };
+export function getPrisma(context: EnvContext) {
+  const env = getEnv(context);
+  const anyContext = context as unknown as { __prisma?: PrismaClient };
 
   if (!anyContext.__prisma) {
-    anyContext.__prisma = createPrisma(anyContext.env);
+    anyContext.__prisma = createPrisma(env);
   }
 
   return anyContext.__prisma;
@@ -52,7 +52,7 @@ const prismaProxy = new Proxy(
 
 export default prismaProxy;
 
-export async function checkDatabaseConnection(context: { env: Env }) {
+export async function checkDatabaseConnection(context: EnvContext) {
   const prisma = getPrisma(context);
 
   try {

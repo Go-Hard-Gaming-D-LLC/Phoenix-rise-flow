@@ -1,4 +1,4 @@
-import { getPrisma, type Env } from "../db.server"; // FIXED: Points to correct location
+import { getPrisma, type EnvContext } from "../db.server"; // FIXED: Points to correct location
 
 /**
  * PHOENIX FLOW: TIER MANAGEMENT
@@ -163,7 +163,7 @@ export function calculateOverage(
 /**
  * Get user's current tier from the database
  */
-export async function getUserTier(context: { env: Env }, shop: string): Promise<string> {
+export async function getUserTier(context: EnvContext, shop: string): Promise<string> {
   if (!shop) return 'free';
 
   // 👑 ADMIN BYPASS: Grants 'Enterprise' (Unlimited) status based on Env Var

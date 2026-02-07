@@ -3,9 +3,9 @@ import { type LoaderFunctionArgs } from "@remix-run/cloudflare";
 import { useFetcher, useLoaderData, useNavigation } from '@remix-run/react';
 import { 
   Page, Layout, Card, Text, TextField, Button, BlockStack, 
-  Banner, Box, List, Link, SkeletonPage, SkeletonBodyText, 
+  Banner, Box, Link, SkeletonPage, SkeletonBodyText, 
   SkeletonDisplayText, InlineStack 
-} from '@shopify/shopify-app-remix/react'; // Ensure correct import for embedded handshake
+} from '@shopify/polaris';
 import shopify from "../shopify.server";
 
 // 1. LOADER: Direct 5432 migration path established

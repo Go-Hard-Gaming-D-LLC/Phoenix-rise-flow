@@ -3,7 +3,7 @@
  * Track feature usage per shop for billing
  */
 
-import { getPrisma, type Env } from "../db.server";
+import { getPrisma, type EnvContext } from "../db.server";
 
 export interface UsageStats {
   descriptionsThisMonth: number;
@@ -15,7 +15,7 @@ export interface UsageStats {
 /**
  * Get current month's usage for a shop
  */
-export async function getMonthlyUsage(context: { env: Env }, shop: string): Promise<UsageStats> {
+export async function getMonthlyUsage(context: EnvContext, shop: string): Promise<UsageStats> {
   const db = getPrisma(context);
   const startOfMonth = new Date();
   startOfMonth.setDate(1);
@@ -62,7 +62,7 @@ export async function getMonthlyUsage(context: { env: Env }, shop: string): Prom
  * Check if user can perform an action based on their tier and usage
  */
 export async function canPerformAction(
-  context: { env: Env },
+  context: EnvContext,
   shop: string,
   userTier: string,
   actionType: 'description' | 'ad' | 'music_video'
@@ -107,7 +107,7 @@ export async function canPerformAction(
  * Record usage of a feature
  */
 export async function recordUsage(
-  context: { env: Env },
+  context: EnvContext,
   shop: string,
   actionType: 'description' | 'ad' | 'music_video',
   metadata?: Record<string, any>
@@ -135,7 +135,7 @@ export async function recordUsage(
 /**
  * Get usage summary with overage calculations
  */
-export async function getUsageSummary(context: { env: Env }, shop: string, userTier: string) {
+export async function getUsageSummary(context: EnvContext, shop: string, userTier: string) {
   const { TIERS, calculateOverage } = await import('./tierConfig');
   const tier = TIERS[userTier];
   const usage = await getMonthlyUsage(context, shop);

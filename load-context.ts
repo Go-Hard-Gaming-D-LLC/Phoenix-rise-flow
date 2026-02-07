@@ -6,6 +6,12 @@ export interface Env {
   // Cloudflare KV
   SESSION_KV: KVNamespace;
 
+  // Hyperdrive database binding (optional when using direct DATABASE_URL)
+  HYPERDRIVE?: { connectionString: string };
+
+  // Direct database URL (e.g., Supabase Postgres)
+  DATABASE_URL?: string;
+
   // Environment Variables
   GEMINI_API_KEY: string;
   SHOPIFY_API_KEY: string;
