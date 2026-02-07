@@ -13,6 +13,20 @@ export function getEnv(context?: EnvContext): Env {
     (context as { env?: Env } | undefined)?.env ??
     globalThis.__CF_ENV;
 
+  if (!env && process.env.NODE_ENV === "development") {
+    return {
+      SESSION_KV: undefined as unknown as Env["SESSION_KV"],
+      GEMINI_API_KEY: process.env.GEMINI_API_KEY || "",
+      SHOPIFY_API_KEY: process.env.SHOPIFY_API_KEY || "",
+      SHOPIFY_API_SECRET: process.env.SHOPIFY_API_SECRET || "",
+      SHOPIFY_APP_URL: process.env.SHOPIFY_APP_URL || "",
+      SCOPES: process.env.SCOPES || "",
+      DATABASE_URL: process.env.DATABASE_URL,
+      HYPERDRIVE: undefined,
+      EMBEDDED: process.env.EMBEDDED,
+    };
+  }
+
   if (!env) {
     throw new Error(
       "Missing Cloudflare env. Ensure bindings are available and set in Pages/Workers."
