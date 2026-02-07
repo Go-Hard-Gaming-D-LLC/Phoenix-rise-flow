@@ -387,7 +387,6 @@ export async function generateJSONLD(productName: string, price: string, currenc
 
   try {
     // Reuse the existing singleton client
-    try {
     const client = getGeminiClient(apiKey);
     const model = client.getGenerativeModel({
       model: 'gemini-1.5-pro',
