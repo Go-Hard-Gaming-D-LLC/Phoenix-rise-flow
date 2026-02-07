@@ -15,6 +15,7 @@ let shopifyInstance: ShopifyApp | undefined;
 
 function createShopify(): ShopifyApp {
   const env = getEnv();
+  const isEmbedded = env.EMBEDDED !== "false";
   return shopifyApp({
     apiKey: env.SHOPIFY_API_KEY,
     apiSecretKey: env.SHOPIFY_API_SECRET,
@@ -22,7 +23,7 @@ function createShopify(): ShopifyApp {
     scopes: env.SCOPES?.split(",") || ["read_products", "write_products", "write_content"],
     appUrl: env.SHOPIFY_APP_URL || "https://ironphoenixflow.com",
     authPathPrefix: "/auth",
-    isEmbeddedApp: true,
+    isEmbeddedApp: isEmbedded,
     sessionStorage: new KvSessionStorage(),
     distribution: AppDistribution.AppStore,
     restResources,

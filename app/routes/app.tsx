@@ -7,6 +7,7 @@ import polarisStyles from "@shopify/polaris/build/esm/styles.css?url";
 import { authenticate } from "../shopify.server";
 import { getPrisma } from "../db.server";
 import LockdownUI from "../components/LockdownUI";
+import { getEnv } from "../utils/env.server";
 
 export const links = () => [{ rel: "stylesheet", href: polarisStyles }];
 
@@ -14,6 +15,8 @@ export const loader = async ({ request, context }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request); // Get session data
   const shop = session.shop;
   const db = getPrisma(context);
+  const env = getEnv(context);
+  const isEmbeddedApp = env.EMBEDDED !== "false";
 
   // --- ANTI-CHURN CHECK ---
   let isLocked = false;
@@ -34,13 +37,14 @@ export const loader = async ({ request, context }: LoaderFunctionArgs) => {
   }
 
   return {
-    apiKey: process.env.SHOPIFY_API_KEY || "",
-    isLocked
+    apiKey: env.SHOPIFY_API_KEY || "",
+    isLocked,
+    isEmbeddedApp
   };
 };
 
 export default function App() {
-  const { apiKey, isLocked } = useLoaderData<typeof loader>();
+  const { apiKey, isLocked, isEmbeddedApp } = useLoaderData<typeof loader>();
 
   if (!apiKey) {
     return (
@@ -54,14 +58,14 @@ export default function App() {
   // --- TRIAL LOCKDOWN ENFORCEMENT ---
   if (isLocked) {
     return (
-      <AppProvider isEmbeddedApp apiKey={apiKey}>
+      <AppProvider isEmbeddedApp={isEmbeddedApp} apiKey={apiKey}>
         <LockdownUI />
       </AppProvider>
     );
   }
 
   return (
-    <AppProvider isEmbeddedApp apiKey={apiKey}>
+    <AppProvider isEmbeddedApp={isEmbeddedApp} apiKey={apiKey}>
       <NavMenu>
         <Link to="/app" rel="home">Phoenix Flow</Link>
         <Link to="/app/description-generator">Description Gen</Link>

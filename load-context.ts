@@ -12,6 +12,9 @@ export interface Env {
   // Direct database URL (e.g., Supabase Postgres)
   DATABASE_URL?: string;
 
+  // Embedded app mode toggle
+  EMBEDDED?: string;
+
   // Environment Variables
   GEMINI_API_KEY: string;
   SHOPIFY_API_KEY: string;
