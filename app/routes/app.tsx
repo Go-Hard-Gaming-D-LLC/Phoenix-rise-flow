@@ -12,11 +12,22 @@ import { getEnv } from "../utils/env.server";
 export const links = () => [{ rel: "stylesheet", href: polarisStyles }];
 
 export const loader = async ({ request, context }: LoaderFunctionArgs) => {
+  const env = getEnv(context);
+  const isEmbeddedApp = env.EMBEDDED !== "false";
+  const url = new URL(request.url);
+  const skipAuth = process.env.NODE_ENV === "development" && url.searchParams.get("skip_auth") === "true";
+
+  if (skipAuth) {
+    return {
+      apiKey: env.SHOPIFY_API_KEY || "",
+      isLocked: false,
+      isEmbeddedApp
+    };
+  }
+
   const { session } = await authenticate.admin(request); // Get session data
   const shop = session.shop;
   const db = getPrisma(context);
-  const env = getEnv(context);
-  const isEmbeddedApp = env.EMBEDDED !== "false";
 
   // --- ANTI-CHURN CHECK ---
   let isLocked = false;
