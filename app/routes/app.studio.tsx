@@ -1,12 +1,16 @@
+/**
+ * 🛡️ SHADOW'S FORGE: NEBULA STUDIO GATE
+ * ROLE: Standalone Entry & Store Linking Interface.
+ * SYNC: 2026-02-07 21:17 PM
+ */
 import { useState, useEffect } from "react";
 import { json, type LoaderFunctionArgs } from "@remix-run/cloudflare";
 import { useLoaderData } from "@remix-run/react";
-import { CustomTokenAuth } from "~/components/CustomTokenAuth";
+// ✅ FIX 2307: Use relative path to link from app/routes to app/components
+import { CustomTokenAuth } from "../components/CustomTokenAuth"; 
 import { Page, Layout, Card, Text } from "@shopify/polaris";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  // This route doesn't require Shopify authentication
-  // It's completely standalone
   return json({ 
     standalone: true,
     appUrl: process.env.SHOPIFY_APP_URL || "https://ironphoenixflow.com"
@@ -19,7 +23,7 @@ export default function StudioStandalone() {
   const [shopData, setShopData] = useState<{ shop: string; token: string } | null>(null);
 
   useEffect(() => {
-    // Check if we have stored credentials
+    // 🛡️ Persistence Handshake
     const token = localStorage.getItem("phoenix_custom_token");
     const shop = localStorage.getItem("phoenix_shop_domain");
     
@@ -32,7 +36,7 @@ export default function StudioStandalone() {
   const handleTokenSubmit = (token: string, shop: string) => {
     setAuthenticated(true);
     setShopData({ shop, token });
-    // Redirect to main workstation
+    // ⚡ Redirect to main mission board
     window.location.href = "/app";
   };
 
