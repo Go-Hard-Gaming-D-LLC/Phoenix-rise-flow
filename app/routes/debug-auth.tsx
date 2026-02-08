@@ -1,9 +1,22 @@
+/**
+ * 🛡️ SHADOW'S FORGE: DIAGNOSTIC GATE
+ * ROLE: Verifies KV Bindings and Non-Embedded Environment Vitals.
+ * STATUS: Optimized for Non-Embedded Testing.
+ */
 import { json, type LoaderFunctionArgs } from "@remix-run/cloudflare";
 import { getEnv } from "../utils/env.server";
 import { getKV } from "../shopify.server";
 
+// ✅ CLINICAL FIX: Define local Env interface to clear Error 2339
+interface Env {
+  DEBUG_AUTH?: string;
+  SHOPIFY_APP_URL?: string;
+  EMBEDDED?: string; // Flag for non-embedded testing
+}
+
 export const loader = async ({ request, context }: LoaderFunctionArgs) => {
-  const env = getEnv(context);
+  // 1. SECURITY LOCKDOWN: Resolving typed environment
+  const env = context.cloudflare.env as Env;
   const debugEnabled = env.DEBUG_AUTH === "true";
 
   if (!debugEnabled) {
@@ -24,9 +37,11 @@ export const loader = async ({ request, context }: LoaderFunctionArgs) => {
     kvError = err?.message || String(err);
   }
 
+  // 2. NON-EMBEDDED VERIFICATION
   return json({
     appUrl: env.SHOPIFY_APP_URL || null,
-    embedded: env.EMBEDDED !== "false",
+    // Forces 'false' when EMBEDDED environment variable is strictly "false"
+    embedded: env.EMBEDDED !== "false", 
     hasKvBinding: kvOk,
     kvError,
     host: request.headers.get("host"),

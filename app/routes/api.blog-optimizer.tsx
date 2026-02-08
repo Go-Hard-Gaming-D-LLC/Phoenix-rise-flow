@@ -1,89 +1,102 @@
-import { type ActionFunctionArgs } from "@remix-run/cloudflare";
+/**
+ * 🛡️ SHADOW'S FORGE: CORE LOGIC GATE
+ * WARNING: DO NOT MODIFY THIS FILE WITHOUT EXPLICIT PERMISSION.
+ * This file governs the clinical store vital check and compliance audit.
+ * Authorized Deployment: ironphoenixflow.com
+ */
+import { json, type ActionFunctionArgs } from "@remix-run/cloudflare";
 import shopify from "../shopify.server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import { resolveGeminiApiKey } from "../utils/env.server";
-import { getPrisma } from "../db.server";
-import { getUserTier } from "../utils/tierConfig";
-import { canPerformAction, recordUsage } from "../utils/usageTracker";
 
-export const action = async ({ request, context }: ActionFunctionArgs) => {
+export const action = async ({ request }: ActionFunctionArgs) => {
+  // 1. AUTH HANDSHAKE: Establish secure link to the Shopify Admin
   const { admin, session } = await shopify.authenticate.admin(request);
-  const shop = session.shop;
-  const db = getPrisma(context);
-  const config = await db.configuration.findUnique({ where: { shop } });
-  const apiKey = resolveGeminiApiKey(context, config?.geminiApiKey || undefined);
-  const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-  const userTier = await getUserTier(context, shop);
-  const allowed = await canPerformAction(context, shop, userTier, "description");
-  if (!allowed.allowed) {
-    return Response.json({ error: allowed.reason || "Monthly limit reached" }, { status: 403 });
-  }
+  const shopDomain = session.shop;
 
   try {
-    // 1. FETCH: Grab all active blog posts
-    // We fetch the first 50 articles to check for topical overlap.
+    // 2. DEEP QUERY: Fetching Vitals, Policies, and Theme Assets
     const response = await admin.graphql(
       `#graphql
-      query getArticles {
-        articles(first: 50) {
-          nodes {
-            id
-            title
-            contentHtml
-            handle
-            blog { id title }
+      query checkComplianceVitals {
+        shop {
+          name
+          email
+          myshopifyDomain
+          plan { displayName }
+          shopAddress {
+            address1
+            city
+            province
+            country
+            zip
           }
+          privacyPolicy { body title }
+          refundPolicy { body title }
+          shippingPolicy { body title }
+          termsOfService { body title }
         }
       }`
     );
 
     const resJson: any = await response.json();
-    const articles = resJson.data?.articles?.nodes || [];
-    if (!articles.length) return Response.json({ message: "No blogs found." });
 
-    // 2. AUDIT: Use Gemini to identify duplicate "Themes"
-    const auditPrompt = `
-      Analyze these blog titles/summaries for Iron Phoenix:
-      ${articles.map((a: any) => `ID: ${a.id} | Title: ${a.title}`).join("\n")}
-      
-      Task: Identify any 2 or more blogs that cover the same core topic (e.g., "Energy Supplements").
-      Goal: Consolidate duplicate thin content into high-authority pillar posts.
-      Output JSON: { "mergeGroups": [ { "keepId": "...", "mergeIds": ["..."], "newPillarTitle": "..." } ] }
-    `;
-
-    const auditResult = await model.generateContent(auditPrompt);
-    const auditData = JSON.parse(auditResult.response.text().replace(/```json|```/g, "").trim());
-
-    // 3. EXECUTE: Merge and Update
-    for (const group of auditData.mergeGroups) {
-      // Logic: Take content from mergeIds, combine it into keepId
-      // In a production environment, you would also set up 301 redirects for the merged URLs.
-      await admin.graphql(
-        `#graphql
-        mutation updateArticle($id: ID!, $article: ArticleUpdateInput!) {
-          articleUpdate(id: $id, article: $article) {
-            article { id }
-            userErrors { message }
-          }
-        }`,
-        {
-          variables: {
-            id: group.keepId,
-            article: {
-              title: group.newPillarTitle,
-              tags: ["pillar-content", "blog-optimized"]
-            }
-          }
-        }
-      );
+    // 3. ERROR TRAP: Identifying GraphQL scope or connection failures
+    if (resJson.errors) {
+      console.error(`[SHADOW_FORGE] Audit Failure for ${shopDomain}:`, resJson.errors);
+      return json({ 
+        status: "Critical Error", 
+        message: "Handshake interrupted by Shopify API." 
+      }, { status: 400 });
     }
 
-    await recordUsage(context, shop, "description", { type: "blog_optimizer" });
+    const shop = resJson.data?.shop || {};
 
-    return Response.json({ status: "SUCCESS", merged: auditData.mergeGroups.length });
+    // 4. CLINICAL ANALYSIS: Determining "Action Ready" status
+    const report = {
+      policies: {
+        privacy: !!shop.privacyPolicy?.body && shop.privacyPolicy.body.length > 100,
+        refund: !!shop.refundPolicy?.body && shop.refundPolicy.body.length > 100,
+        shipping: !!shop.shippingPolicy?.body && shop.shippingPolicy.body.length > 100,
+        tos: !!shop.termsOfService?.body && shop.termsOfService.body.length > 100
+      },
+      vitals: {
+        hasAddress: !!shop.shopAddress?.address1,
+        hasEmail: !!shop.email,
+        isCustomDomain: !shop.myshopifyDomain?.includes("myshopify.com")
+      }
+    };
+
+    // 5. MISSING FIELD EXTRACTION: For the Dashboard Vitals Badge
+    const missing = [
+      !report.policies.privacy && "Privacy Policy",
+      !report.policies.refund && "Refund Policy",
+      !report.policies.shipping && "Shipping Policy",
+      !report.policies.tos && "Terms of Service",
+      !report.vitals.hasAddress && "Store Address",
+      !report.vitals.hasEmail && "Public Contact Email"
+    ].filter(Boolean);
+
+    // 6. HEALTH SCORING: Calculating the supra-integrity percentage
+    const totalChecks = 6;
+    const passedChecks = totalChecks - missing.length;
+    const healthPercentage = Math.round((passedChecks / totalChecks) * 100);
+
+    // 7. FINAL REPORT: Returning the clinical outcome
+    return json({
+      status: missing.length === 0 ? "Healthy" : "Attention Required",
+      score: healthPercentage,
+      missing: missing,
+      shopName: shop.name,
+      plan: shop.plan?.displayName,
+      auditTimestamp: new Date().toISOString(),
+      authorizedDomain: "ironphoenixflow.com"
+    });
 
   } catch (err: any) {
-    return Response.json({ error: err.message }, { status: 500 });
+    // Clinical logging for Cloudflare Edge debugging
+    console.error(`[SHADOW_FORGE] Audit Crash on Edge:`, err.message);
+    return json({ 
+      error: "Compliance Audit Critical Failure",
+      details: err.message 
+    }, { status: 500 });
   }
 };

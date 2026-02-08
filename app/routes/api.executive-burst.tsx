@@ -1,25 +1,34 @@
+/**
+ * 🛡️ SHADOW'S FORGE: CORE LOGIC GATE
+ * WARNING: DO NOT MODIFY THIS FILE WITHOUT EXPLICIT PERMISSION.
+ * This file governs the clinical PHOENIX FLOW EXECUTIVE ENGINE (CONTENT BURST).
+ * Authorized Deployment: ironphoenixflow.com
+ */
 import { json, type ActionFunctionArgs } from "@remix-run/cloudflare";
 import { authenticate } from "../shopify.server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { resolveGeminiApiKey } from "../utils/env.server";
 import { getPrisma } from "../db.server";
 import { getUserTier } from "../utils/tierConfig";
 import { canPerformAction, recordUsage } from "../utils/usageTracker";
 
-// SYSTEM ROLE: PHOENIX FLOW EXECUTIVE ENGINE (CONTENT BURST)
-// FUNCTION: Batch Processor for Titles & Descriptions.
-// LIMIT: 40 Products.
-
 export const action = async ({ request, context }: ActionFunctionArgs) => {
+  // 1. AUTH & SECRETS: Verify the Shopify Admin session
   const { admin, session } = await authenticate.admin(request);
   const shop = session.shop;
   const db = getPrisma(context);
-  const config = await db.configuration.findUnique({ where: { shop } });
 
-  // ENFORCEMENT: Use Cloudflare context for the API key (No process.env)
-  const apiKey = resolveGeminiApiKey(context, config?.geminiApiKey || undefined);
+  // ✅ CLINICAL FIX: Resolve Key directly from Edge Context to avoid Error 2339
+  const apiKey = context.cloudflare.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    return json({ 
+      error: "❌ SHADOW'S FORGE: Missing GEMINI_API_KEY in Cloudflare Secrets." 
+    }, { status: 500 });
+  }
+
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  
+  // 2. USAGE VERIFICATION: Checks tier-based limits before AI ignition
   const userTier = await getUserTier(context, shop);
   const allowed = await canPerformAction(context, shop, userTier, "description");
   if (!allowed.allowed) {
@@ -27,7 +36,7 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
   }
 
   try {
-    // 1. FETCH: Strictly limited to 5 products for Edge stability
+    // 3. FETCH: Strictly limited to 5 products for Edge stability
     const response = await admin.graphql(
       `#graphql
       query fetchBatch {
@@ -44,8 +53,8 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
       }`
     );
 
-    const responseJson = await response.json();
-    const products = responseJson.data.products.edges.map((e: any) => e.node);
+    const responseJson: any = await response.json();
+    const products = responseJson.data?.products?.edges?.map((e: any) => e.node) || [];
 
     if (products.length === 0) {
       return json({ status: "IDLE", message: "No unoptimized products found." });
@@ -53,7 +62,7 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
 
     const report: any[] = [];
 
-    // 2. SEQUENTIAL BURST: Using map for parallel execution but on a small 5-item set
+    // 4. SEQUENTIAL BURST: Parallel execution on small 5-item set
     await Promise.all(products.map(async (product: any) => {
       const productStringId = String(product.id);
 
@@ -63,19 +72,20 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
         Desc: ${product.descriptionHtml}
 
         Task: Generate an Optimized H1 Title and a Persuasive Description(HTML).
-          Constraints:
-        1. Title: User - focused, descriptive, clean.
-                2. Description: 2 sentences max, sales - driven.
-                3. Output JSON: { "title": "...", "descriptionHtml": "..." }
+        Constraints:
+        1. Title: User-focused, descriptive, clean.
+        2. Description: 2 sentences max, sales-driven.
+        3. Output JSON: { "title": "...", "descriptionHtml": "..." }
         `;
 
       try {
         const result = await model.generateContent(prompt);
         const text = result.response.text();
-        const cleanJson = text.replace(/```json | ```/g, "").trim();
+        // Sanitization of JSON output
+        const cleanJson = text.replace(/```json\n?|```/g, "").trim();
         const aiData = JSON.parse(cleanJson);
 
-        // 3. UPDATE SHOPIFY (Content)
+        // 5. UPDATE SHOPIFY: Writing Optimized Content
         await admin.graphql(
           `#graphql
           mutation productUpdate($input: ProductInput!) {
@@ -94,7 +104,7 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
           }
         );
 
-        // 4. LOCK (Tagging)
+        // 6. LOCK: Tagging to prevent re-optimization
         await admin.graphql(
           `#graphql
           mutation addTags($id: ID!, $tags: [String!]!) {
@@ -118,6 +128,7 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
       }
     }));
 
+    // 7. TELEMETRY: Recording action in usage tracker
     await recordUsage(context, shop, "description", { type: "executive_burst" });
 
     return json({

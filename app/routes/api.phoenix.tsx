@@ -1,6 +1,12 @@
+/**
+ * 🛡️ SHADOW'S FORGE: CORE LOGIC GATE
+ * WARNING: DO NOT MODIFY THIS FILE WITHOUT EXPLICIT PERMISSION.
+ * This file governs the clinical Phoenix Engine: Scan, Analyze, and Apply.
+ * Authorized Deployment: ironphoenixflow.com
+ */
 import { json, type ActionFunctionArgs } from "@remix-run/cloudflare";
 import { authenticate } from "../shopify.server";
-import { getPrisma } from "../db.server"; // Prisma connection
+import { getPrisma } from "../db.server";
 import { analyzeProductData } from "../gemini.server";
 
 interface PhoenixRequestBody {
@@ -15,8 +21,8 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
   const shop = session.shop;
   const contentType = request.headers.get("Content-Type") || "";
 
-  // --- ANTI-CHURN LOCKDOWN CHECK ---
-  const churnRecord = await db.antiChurn.findUnique({ where: { shop: session.shop } });
+  // 1. ANTI-CHURN LOCKDOWN: Prevents trial exploitation
+  const churnRecord = await db.antiChurn.findUnique({ where: { shop } });
   if (churnRecord?.trialUsed && churnRecord.lastUninstalled) {
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
@@ -31,7 +37,7 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
       const body = (await request.json()) as PhoenixRequestBody;
       const { mode, products, context: userContext } = body;
 
-      // --- MODE: SCAN (Strict 5-item limit) ---
+      // --- MODE: SCAN (Strict 5-item safety limit for Edge stability) ---
       if (mode === "scan") {
         const response = await admin.graphql(`
           query { products(first: 5, query: "status:active") { edges { node { id title } } } }
@@ -43,19 +49,19 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
         });
       }
 
-      // --- MODE: ANALYZE (Sequential Edge Processing) ---
+      // --- MODE: ANALYZE (High-Precision Sequential Processing) ---
       if (mode === "analyze") {
         const results = [];
-
         const productList = Array.isArray(products) ? products : [];
+        
         for (const product of productList) {
-          // 1. Execute High-Precision AI Analysis
+          // Execute High-Precision AI Analysis
           const aiData = await analyzeProductData(product, userContext);
 
-          // 2. Persistent Logging: Writing to OptimizationHistory 
+          // Persistent Logging to OptimizationHistory
           await db.optimizationHistory.create({
             data: {
-              shop: shop,
+              shop,
               productId: product.id,
               productName: product.title,
               optimizationType: "BULK_SCAN_V1",
@@ -64,7 +70,7 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
                 description: aiData.optimized_html_description,
                 schema: aiData.json_ld_schema
               }),
-              status: "success" // Verified after AI generation [cite: 15]
+              status: "success"
             }
           });
 
@@ -82,7 +88,7 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
         return json({ success: true, results });
       }
 
-      // --- MODE: APPLY (Writing Fixes to Shopify) ---
+      // --- MODE: APPLY (Schema Shield & Shopify Deployment) ---
       if (mode === "apply") {
         const productList = Array.isArray(products) ? products : [];
         for (const p of productList) {
@@ -107,7 +113,7 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
 
           const resJson = await response.json();
 
-          // Log completion of the apply phase [cite: 15]
+          // Finalize the apply phase in database
           if (!resJson.data?.productUpdate?.userErrors?.length) {
             await db.optimizationHistory.updateMany({
               where: { shop, productId: p.productId, status: "success" },
@@ -124,4 +130,3 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
     return json({ success: false, error: error.message }, { status: 500 });
   }
 };
-

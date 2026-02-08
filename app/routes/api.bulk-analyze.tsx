@@ -1,67 +1,96 @@
-import { json, type ActionFunctionArgs } from "@remix-run/cloudflare";
+/**
+ * 🛡️ SHADOW'S FORGE: CORE LOGIC GATE
+ * WARNING: DO NOT MODIFY THIS FILE WITHOUT EXPLICIT PERMISSION.
+ * This file governs the Bulk Analyzer command center and burst routing.
+ */
+import { useLoaderData, useFetcher, useNavigation } from "@remix-run/react";
+import { type LoaderFunctionArgs } from "@remix-run/cloudflare";
+import { 
+  Page, Layout, Card, Text, BlockStack, Banner, 
+  Badge, DataTable, Button, InlineStack, SkeletonPage, 
+  SkeletonBodyText, Box 
+} from "@shopify/polaris";
 import { authenticate } from "../shopify.server";
-// IMPORT THE FUNCTIONS THAT ACTUALLY EXIST
-import { analyzeProductData, generateJSONLD } from "../gemini.server";
-import { sendDeveloperAlert } from "../utils/developerAlert"; // Developer Alert Import
-import { getUserTier, canAccessFeature, hasReachedLimit } from "../utils/tierConfig"; // Tier Logic
-import { getPrisma } from "../db.server";
-import { resolveGeminiApiKey } from "../utils/env.server";
-import { recordUsage } from "../utils/usageTracker";
 
-export const action = async ({ request, context }: ActionFunctionArgs) => {
-    const { admin, session } = await authenticate.admin(request);
-    const db = getPrisma(context);
-    const config = await db.configuration.findUnique({ where: { shop: session.shop } });
-    const apiKey = resolveGeminiApiKey(context, config?.geminiApiKey || undefined);
-
-    const formData = await request.formData();
-    const mode = formData.get("mode");
-
-    // --- MODE 1: SCAN (The Triage) ---
-    if (mode === "scan") {
-        const response = await admin.graphql(`
-      query { products(first: 5, reverse: true) { edges { node { id title bodyHtml variants(first: 1) { edges { node { price } } } } } } }
+export const loader = async ({ request }: LoaderFunctionArgs) => {
+    const { admin } = await authenticate.admin(request);
+    
+    // ✅ SYNC: Same 50-item audit scan used in Phoenix Flow
+    const response = await admin.graphql(`
+      query auditInventory {
+        products(first: 50) {
+          nodes {
+            id
+            title
+            descriptionHtml
+            seo { description }
+          }
+        }
+      }
     `);
-        const data = await response.json();
-        return json({ products: data.data.products.edges.map((e: any) => e.node) });
-    }
 
-    // --- MODE 2: ANALYZE (Using analyzeProductData) ---
-    if (mode === "analyze") {
-        const productJson = formData.get("productJson"); // Pass the raw product data
-        const shop = session.shop;
+    const { data } = await response.json();
+    
+    const audited = data.products.nodes.map((p: any) => {
+        let score = 100;
+        if (!p.descriptionHtml || p.descriptionHtml.length < 50) score -= 40;
+        if (!p.seo?.description) score -= 30;
+        return { ...p, healthScore: score };
+    });
 
-        // 1. Get Tier & Check Feature Access
-        const userTier = await getUserTier(context, shop);
-        if (!canAccessFeature(userTier, 'bulk_analyzer')) {
-            return json({ error: "Please upgrade to Starter to use Bulk Analyzer" }, { status: 403 });
-        }
-
-        // 2. Check Monthly Limits
-        const firstOfOfMonth = new Date();
-        firstOfOfMonth.setDate(1);
-        firstOfOfMonth.setHours(0, 0, 0, 0);
-
-        // WARNING: db.server.ts must be configured with a Cloudflare-compatible driver (e.g. Prisma Accelerate or D1)
-        // for this to work in production on Cloudflare Workers.
-        const currentUsage = await db.optimizationHistory.count({
-            where: { shop, createdAt: { gte: firstOfOfMonth } }
-        });
-
-        if (hasReachedLimit(userTier, 'descriptionsPerMonth', currentUsage)) {
-            await sendDeveloperAlert('LIMIT_REACHED', `Shop ${shop} limit hit: ${currentUsage} / ${userTier}`);
-            return json({ error: "Monthly limit reached" }, { status: 403 });
-        }
-
-        // Calling the function that exists in your gemini.server.ts
-        const analysis = await analyzeProductData(JSON.parse(productJson as string));
-
-        // Also generate the Schema Shield (JSON-LD) to fix GMC flags
-        const schema = await generateJSONLD(analysis.optimized_title, "19.99", "USD", apiKey);
-
-        await recordUsage(context, shop, "description", { type: "bulk_analyze" });
-        return json({ analysis, schema });
-    }
-
-    return json({ error: "Invalid Mode" }, { status: 400 });
+    return { 
+        worstOffenders: audited.sort((a: any, b: any) => a.healthScore - b.healthScore).slice(0, 15) 
+    };
 };
+
+export default function BulkAnalyzer() {
+    const { worstOffenders } = useLoaderData<typeof loader>();
+    const fetcher = useFetcher();
+    const navigation = useNavigation();
+
+    if (navigation.state === "loading") {
+        return <SkeletonPage><Layout><Layout.Section><Card><SkeletonBodyText lines={5} /></Card></Layout.Section></Layout></SkeletonPage>;
+    }
+
+    return (
+        <Page title="Executive Bulk Analyzer" subtitle="Portfolio-Wide SEO Triage">
+            <Layout>
+                <Layout.Section>
+                    <Banner title="System Ready" tone="info">
+                        <p>15 High-Priority targets identified for AI Burst optimization.</p>
+                    </Banner>
+                </Layout.Section>
+
+                <Layout.Section>
+                    <Card>
+                        <BlockStack gap="400">
+                            <Text variant="headingMd" as="h2">Hit List: Critical SEO Deficits</Text>
+                            <DataTable
+                                columnContentTypes={['text', 'numeric', 'text']}
+                                headings={['Product', 'Health', 'Status']}
+                                rows={worstOffenders.map(p => [
+                                    p.title,
+                                    <Badge tone={p.healthScore < 50 ? "critical" : "warning"}>{`${p.healthScore}%`}</Badge>,
+                                    "Pending Fix"
+                                ])}
+                            />
+                            <InlineStack align="end" gap="300">
+                                <Button 
+                                    onClick={() => fetcher.submit({ intent: "MEDIA_SEO_BURST" }, { method: "POST", action: "/app/logic-controller" })}
+                                >
+                                    Fix Media Alts
+                                </Button>
+                                <Button 
+                                    variant="primary"
+                                    onClick={() => fetcher.submit({ intent: "BULK_PORTFOLIO_SCAN" }, { method: "POST", action: "/app/logic-controller" })}
+                                >
+                                    Launch Executive Burst
+                                </Button>
+                            </InlineStack>
+                        </BlockStack>
+                    </Card>
+                </Layout.Section>
+            </Layout>
+        </Page>
+    );
+}

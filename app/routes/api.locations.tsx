@@ -1,3 +1,9 @@
+/**
+ * 🛡️ SHADOW'S FORGE: CORE LOGIC GATE
+ * WARNING: DO NOT MODIFY WITHOUT EXPLICIT PERMISSION.
+ * ROLE: Geographic Discovery Engine (Location Vitals).
+ * GOAL: Resolve Location GIDs for Inventory Sync and Compliance Audits.
+ */
 import { json, type LoaderFunctionArgs } from "@remix-run/cloudflare";
 import shopify from "../shopify.server";
 
@@ -6,11 +12,11 @@ import shopify from "../shopify.server";
  * Optimized for Cloudflare Remix and authenticated Shopify sessions.
  */
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  // 1. Authenticate the admin session
+  // 1. AUTH HANDSHAKE: Establish secure link to Shopify Admin
   const { admin } = await shopify.authenticate.admin(request);
 
   try {
-    // 2. Execute GraphQL query to find active locations
+    // 2. QUERY ENGINE: Fetching active location vitals
     const response = await admin.graphql(
       `#graphql
       query getStoreLocations {
@@ -28,18 +34,18 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
     const resJson: any = await response.json();
 
-    // 3. Return clean JSON response using Remix helper
+    // 3. CLINICAL DATA EXTRACTION: Mapping nodes for Mission Control
     return json({
       locations: resJson.data?.locations?.edges.map((e: any) => e.node) || [],
       instructions: "Copy the 'id' (e.g., gid://shopify/Location/12345) for use in your inventory sync configuration."
     });
 
   } catch (error: any) {
-    // 4. Enhanced Error Messaging for Edge debugging
+    // 4. ERROR TRAP: Enhanced messaging for Edge debugging
     console.error("Location Fetch Error:", error.message);
     return json({
       success: false,
-      error: "Failed to fetch locations. Please check your Cloudflare logs and Shopify API permissions."
+      error: "Failed to fetch locations. Check Cloudflare logs and Shopify API permissions."
     }, { status: 500 });
   }
 };

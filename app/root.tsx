@@ -1,3 +1,8 @@
+/**
+ * 🛡️ SHADOW'S FORGE: CORE ROOT GATE
+ * WARNING: DO NOT MODIFY WITHOUT EXPLICIT PERMISSION.
+ * ROLE: Global Application Layout & Polaris UI Provider.
+ */
 import polarisStyles from "@shopify/polaris/build/esm/styles.css?url";
 import workstationStyles from "./styles/workstation.css?url";
 import {
@@ -8,11 +13,10 @@ import {
   ScrollRestoration,
 } from "@remix-run/react";
 import type { LinksFunction } from "@remix-run/cloudflare";
+import { AppProvider } from "@shopify/polaris";
 
-// 1. ADD THE POLARIS IMPORT HERE (Vite-style)
-
+// ✅ CLINICAL SYNC: Global styles for Mission Control
 export const links: LinksFunction = () => [
-  // 2. REGISTER POLARIS FIRST
   { rel: "stylesheet", href: polarisStyles },
   { rel: "stylesheet", href: workstationStyles },
   { rel: "stylesheet", href: "https://cdn.shopify.com/static/fonts/inter/v4/styles.css" },
@@ -29,7 +33,10 @@ export default function App() {
         <Links />
       </head>
       <body>
-        <Outlet />
+        {/* ✅ CLINICAL FIX: Removed invalid 'isEmbeddedApp' prop to clear Error 2322 */}
+        <AppProvider i18n={{}}>
+          <Outlet />
+        </AppProvider>
         <ScrollRestoration />
         <Scripts />
       </body>

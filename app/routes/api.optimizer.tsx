@@ -1,74 +1,93 @@
+/**
+ * 🛡️ SHADOW'S FORGE: CORE LOGIC GATE
+ * WARNING: DO NOT MODIFY WITHOUT EXPLICIT PERMISSION.
+ * ROLE: Batch Optimizer Engine (Execution Only).
+ * LIMIT: 5 Products per Burst.
+ */
 import { json, type ActionFunctionArgs } from "@remix-run/cloudflare";
-import shopify from "../shopify.server";
+import { authenticate } from "../shopify.server";
+import { analyzeProductData } from "../gemini.server";
+import { getPrisma } from "../db.server";
+import { recordUsage } from "../utils/usageTracker";
 
-export const action = async ({ request }: ActionFunctionArgs) => {
-  const { admin } = await shopify.authenticate.admin(request);
+// ✅ CLINICAL FIX: Interface definition to clear Error 2339
+interface OptimizerPayload {
+  products: any[];
+  userContext?: string;
+  mode: "analyze" | "apply";
+}
+
+export const action = async ({ request, context }: ActionFunctionArgs) => {
+  const { admin, session } = await authenticate.admin(request);
+  const shop = session.shop;
+
+  // 1. SECRETS RESOLUTION: Direct Edge Context to bypass DB property errors
+  const apiKey = context.cloudflare.env.GEMINI_API_KEY;
+  if (!apiKey) return json({ error: "❌ Missing GEMINI_API_KEY." }, { status: 500 });
 
   try {
-    const response = await admin.graphql(
-      `#graphql
-      query fetchMediaBatch {
-        products(first: 5, query: "-tag:visual-locked") {
-          nodes {
-            id
-            title
-            media(first: 5) {
-              nodes {
-                ... on MediaImage {
-                  id
-                  image { url }
-                }
-              }
-            }
-          }
-        }
-      }`
-    );
+    // ✅ CLINICAL FIX: Cast payload to interface
+    const body = (await request.json()) as OptimizerPayload;
+    const { products, userContext, mode } = body;
 
-    const resJson: any = await response.json();
-    const products = resJson.data?.products?.nodes || [];
-    const report = [];
+    // 2. SAFETY CLAMP: Enforce 5-item burst for Edge stability
+    if (!products || !Array.isArray(products)) {
+      return json({ error: "Invalid payload: Expected product array." }, { status: 400 });
+    }
+    const safeBatch = products.slice(0, 5);
 
-    // SEQUENTIAL LOOP: Protects Cloudflare Worker 128MB limit
-    for (const product of products) {
-      for (const mediaNode of product.media.nodes) {
-        if (!mediaNode.image) continue;
+    // --- MODE: ANALYZE (Parallel Extraction) ---
+    if (mode === "analyze") {
+      const results = await Promise.all(safeBatch.map(async (product: any) => {
+        // High-precision AI analysis with specific creative context
+        const aiData = await analyzeProductData(product, userContext || "Batch Optimization");
+        return {
+          productId: product.id,
+          currentTitle: product.title,
+          optimized_title: aiData.optimized_title,
+          optimized_html_description: aiData.optimized_html_description,
+          json_ld_schema: aiData.json_ld_schema,
+          seoScore: aiData.seoScore,
+          ready: true
+        };
+      }));
+      return json({ success: true, results });
+    }
 
+    // --- MODE: APPLY (Sequential Writing & Schema Shield Injection) ---
+    if (mode === "apply") {
+      for (const p of safeBatch) {
         await admin.graphql(
           `#graphql
-          mutation fileUpdate($files: [FileUpdateInput!]!) {
-            fileUpdate(files: $files) {
-              files { id alt }
+          mutation productUpdate($input: ProductInput!) {
+            productUpdate(input: $input) {
+              product { id }
               userErrors { field message }
             }
           }`,
           {
             variables: {
-              files: [{
-                id: mediaNode.id,
-                alt: `Iron Phoenix: ${product.title} SEO`
-              }]
+              input: {
+                id: p.productId,
+                title: p.optimized_title,
+                // Injecting Schema Shield (JSON-LD) into the storefront
+                descriptionHtml: p.optimized_html_description + `\n\n<script type="application/ld+json">${p.json_ld_schema}</script>`,
+                tags: ["phoenix-batch-optimized"]
+              }
             }
           }
         );
       }
 
-      // Tag product to filter it from future scans
-      await admin.graphql(
-        `#graphql
-        mutation lockVisuals($id: ID!, $tags: [String!]!) {
-          tagsAdd(id: $id, tags: $tags) { node { id } }
-        }`,
-        { variables: { id: product.id, tags: ["visual-locked"] } }
-      );
-
-      report.push({ title: product.title, status: "SEO_COMPLETE" });
+      // 3. TELEMETRY: Record burst optimization usage
+      await recordUsage(context, shop, "description", { type: "optimizer_burst", count: safeBatch.length });
+      return json({ success: true });
     }
 
-    return json({ status: "SUCCESS", report });
+    return json({ error: "Invalid Mode" }, { status: 400 });
 
   } catch (err: any) {
-    console.error("Media Optimizer Error:", err.message);
+    console.error("[SHADOW_FORGE] Optimizer Crash:", err.message);
     return json({ error: err.message }, { status: 500 });
   }
 };

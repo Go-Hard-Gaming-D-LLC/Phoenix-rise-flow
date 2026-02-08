@@ -1,8 +1,9 @@
-# ✅ CORRECT APP: Phoenix Flow Rise
+# 🛡️ SHADOW'S FORGE: Phoenix Flow Rise Standalone Config
+# ROLE: Liberate workstation from Admin Iframe
 client_id = "ea7d669014bc192a3d3587fe2baa34a2"
 name = "Phoenix Flow Rise"
 application_url = "https://ironphoenixflow.com"
-embedded = true
+embedded = false # ✅ CLINICAL FIX: Standalone mode active
 
 [build]
 automatically_update_urls_on_dev = true
@@ -11,6 +12,7 @@ automatically_update_urls_on_dev = true
 api_version = "2026-01"
 
 [access_scopes]
+# High-precision scopes for clinical store repairs
 scopes = "read_files,write_files,read_inventory,read_legal_policies,read_locations,read_online_store_navigation,write_online_store_navigation,read_products,write_products,read_content,write_content,read_themes,write_themes"
 optional_scopes = [ "write_inventory" ]
 use_legacy_install_flow = false

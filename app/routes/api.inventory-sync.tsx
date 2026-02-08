@@ -1,11 +1,20 @@
+/**
+ * 🛡️ SHADOW'S FORGE: CORE LOGIC GATE
+ * WARNING: DO NOT MODIFY WITHOUT EXPLICIT PERMISSION.
+ * ROLE: Inventory Vitals & Floor Enforcement Engine.
+ * ENFORCED LIMIT: 50 Products per Sync Isolate.
+ */
 import { json, type ActionFunctionArgs } from "@remix-run/cloudflare";
 import shopify from "../shopify.server";
+import { recordUsage } from "../utils/usageTracker";
 
-export const action = async ({ request }: ActionFunctionArgs) => {
-  const { admin } = await shopify.authenticate.admin(request);
+export const action = async ({ request, context }: ActionFunctionArgs) => {
+  // 1. AUTH HANDSHAKE: Establish secure link to the Shopify Admin
+  const { admin, session } = await shopify.authenticate.admin(request);
+  const shop = session.shop;
 
   try {
-    /* 1. Fetch primary location */
+    // 2. LOCATION RESOLUTION: Fetch primary fulfillment center
     const locationRes = await admin.graphql(`
       query {
         locations(first: 1) {
@@ -18,10 +27,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const locationId = locationJson.data.locations.nodes[0]?.id;
 
     if (!locationId) {
-      throw new Error("No active Shopify location found. Ensure locations are configured in your admin.");
+      throw new Error("❌ SHADOW'S FORGE: No active Shopify location found.");
     }
 
-    /* 2. Fetch products - Limited to 50 for Edge stability */
+    // 3. DATA ACQUISITION: 50-item burst for Edge stability
     const response = await admin.graphql(`
       query fetchVendorInventory {
         products(first: 50) {
@@ -47,11 +56,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
     const podVendors = ["printify", "printful", "teelaunch", "anywherepod"];
 
-    // 3. STRICT SEQUENTIAL LOOP: Protects 128MB memory isolate
+    // 4. SEQUENTIAL EXECUTION: One at a time to stay under memory limits
     for (const product of products) {
       const vendor = product.vendor?.toLowerCase() || "";
 
-      /* CJ / Dropshipping → Archive if out of stock */
+      /* CLINICAL RULE 1: Dropshipping Automation */
       if (vendor.includes("cj") || vendor.includes("dropshipping")) {
         const shouldArchive = product.variants.nodes.some(
           (v: any) => v.inventoryQuantity <= 0
@@ -72,7 +81,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         }
       }
 
-      /* POD vendors → Inventory floor enforcement */
+      /* CLINICAL RULE 2: POD Floor Enforcement (Min: 3) */
       if (podVendors.some(v => vendor.includes(v))) {
         const quantities = product.variants.nodes
           .filter((v: any) => v.inventoryQuantity < 3)
@@ -105,13 +114,15 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       }
     }
 
+    // 5. TELEMETRY: Recording sync vites in usage tracker
+    await recordUsage(context, shop, "description", { type: "inventory_sync", count: products.length });
+
     return json({ status: "SYNCED", report });
 
   } catch (error: any) {
-    // 4. Enhanced Error Messaging: Explicit debugging guidance
-    console.error("Inventory Sync Error:", error.message);
+    console.error("PHOENIX SYNC FAILURE:", error.message);
     return json(
-      { status: "ERROR", message: "Inventory sync failed. Check Shopify API quotas or Cloudflare Worker memory usage." },
+      { status: "ERROR", message: "Inventory sync failed." },
       { status: 500 }
     );
   }

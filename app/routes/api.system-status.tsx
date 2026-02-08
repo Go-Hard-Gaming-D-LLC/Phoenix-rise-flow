@@ -1,3 +1,8 @@
+/**
+ * 🛡️ SHADOW'S FORGE: CORE LOGIC GATE
+ * WARNING: DO NOT MODIFY WITHOUT EXPLICIT PERMISSION.
+ * ROLE: Central System Heartbeat & Truth Table Verification.
+ */
 import { json, type ActionFunctionArgs } from "@remix-run/cloudflare";
 import { authenticate } from "../shopify.server";
 import { getPrisma } from "../db.server";
@@ -8,20 +13,26 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
     const db = getPrisma(context);
 
     try {
-        // 1. Database Integrity Check
+        // 1. DATABASE INTEGRITY: Verify core Truth Tables
         const config = await db.configuration.findUnique({ where: { shop } });
         const historyCount = await db.optimizationHistory.count({ where: { shop } });
         const churnRecord = await db.antiChurn.findUnique({ where: { shop } });
 
-        // 2. Shopify API Handshake Verification
+        // 2. SHOPIFY HANDSHAKE: Live API link verification
         const shopResponse = await admin.graphql(`#graphql
-      query { shop { name plan { displayName } } }
-    `);
-        const shopData = await shopResponse.json();
+          query checkHeartbeat { 
+            shop { 
+              name 
+              plan { displayName } 
+            } 
+          }
+        `);
+        const shopData: any = await shopResponse.json();
 
-        // 3. Clinical Result Aggregation
+        // 3. CLINICAL AGGREGATION: Reporting system vitals
         return json({
             success: true,
+            timestamp: new Date().toISOString(),
             checks: [
                 {
                     label: "Identity Config",
@@ -46,6 +57,7 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
             ]
         });
     } catch (error: any) {
+        console.error("[SHADOW_FORGE] Heartbeat Failure:", error.message);
         return json({ success: false, error: error.message }, { status: 500 });
     }
 };
