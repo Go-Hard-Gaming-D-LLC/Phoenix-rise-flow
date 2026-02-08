@@ -1,3 +1,8 @@
+/**
+ * 🛡️ SHADOW'S FORGE: NEBULA SERVER CORE
+ * ROLE: Standalone Workstation Handshake.
+ * SYNC: 2026-02-07 21:12 PM
+ */
 import type { AppLoadContext } from "@remix-run/cloudflare";
 import {
   AppDistribution,
@@ -15,13 +20,34 @@ let shopifyInstance: ShopifyApp | undefined;
 
 function createShopify(): ShopifyApp {
   const env = getEnv();
-  const isEmbedded = env.EMBEDDED !== "false";
+
+  // ✅ CLINICAL LOCK: Explicitly set to false for Standalone Nebula Studio.
+  // This resolves the 400 Bad Request error by disabling the Admin iframe logic.
+  const isEmbedded = false;
+
   return shopifyApp({
     apiKey: env.SHOPIFY_API_KEY,
     apiSecretKey: env.SHOPIFY_API_SECRET,
     apiVersion: LATEST_API_VERSION,
-    scopes: env.SCOPES?.split(",") || ["read_products", "write_products", "write_content"],
-    appUrl: env.SHOPIFY_APP_URL || "https://ironphoenixflow.com",
+    // 🛡️ SYNC: Locked to the extensive Rise diagnostic scopes.
+    scopes: env.SCOPES?.split(",") || [
+      "read_files",
+      "write_files",
+      "write_inventory",
+      "read_inventory",
+      "read_legal_policies",
+      "read_locations",
+      "read_online_store_navigation",
+      "write_online_store_navigation",
+      "read_products",
+      "write_products",
+      "read_content",
+      "write_content",
+      "read_themes",
+      "write_themes"
+    ],
+    // 🛡️ SYNC: Points directly to your high-density workstation entry.
+    appUrl: "https://ironphoenixflow.com/studio",
     authPathPrefix: "/auth",
     isEmbeddedApp: isEmbedded,
     sessionStorage: new KvSessionStorage(),
@@ -44,7 +70,8 @@ function createShopify(): ShopifyApp {
       },
     },
     future: {
-      unstable_newEmbeddedAuthStrategy: true,
+      // ✅ LOCK: Must be false when isEmbeddedApp is false to prevent iframe auth loops.
+      unstable_newEmbeddedAuthStrategy: false,
     },
   });
 }

@@ -31,26 +31,27 @@ body {
     background-attachment: fixed;
 }
 
-/* FULL-WIDTH LAYOUT OVERRIDES */
+/* FORCE FULL WIDTH: Clears the "half-page nothing" */
 .Polaris-Page {
     max-width: none !important;
     padding: 0 !important;
     margin: 0 !important;
 }
 
-/* MISSION CONTROL LAYOUT */
-.mission-control-layout { 
-    display: grid; 
-    grid-template-columns: 340px 1fr; 
+/* NEBULA THEME WRAPPER */
+.nebula-theme .mission-control-layout {
+    display: grid;
+    grid-template-columns: 360px 1fr;
     min-height: 100vh;
+    background-color: #050507;
 }
 
-/* SIDEBAR: Store Vitals Section */
-.config-sidebar { 
-    background: var(--glass-bg);
-    backdrop-filter: blur(40px);
-    border-right: 1px solid var(--glass-border);
-    padding: 36px 24px;
+/* THE SIDEBAR: High-Density Store Vitals */
+.config-sidebar {
+    background: rgba(13, 13, 17, 0.95);
+    backdrop-filter: blur(20px);
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 40px 24px;
     display: flex;
     flex-direction: column;
     gap: 24px;

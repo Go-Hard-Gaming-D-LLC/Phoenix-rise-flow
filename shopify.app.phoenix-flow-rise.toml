@@ -1,22 +1,27 @@
-# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+# 🛡️ SHADOW'S FORGE: PHOENIX FLOW RISE (STANDALONE)
+# ROLE: Synchronizes Nebula Studio with 2026 Dashboard Settings.
 
 client_id = "ea7d669014bc192a3d3587fe2baa34a2"
 name = "Phoenix Flow Rise"
-application_url = "https://ironphoenixflow.com"
-embedded = true
+application_url = "https://ironphoenixflow.com/studio" # 🛡️ Direct Studio Entry
+embedded = false # 🛡️ LIBERATED FROM IFRAME
 
 [webhooks]
-api_version = "2026-01"
+api_version = "2026-01" # 🛡️ Locked to Latest 2026 Standards
 
 [access_scopes]
-# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+# 🛡️ Extensive optimization scopes for deep store triage
 scopes = "read_files,write_files,write_inventory,read_inventory,read_legal_policies,read_locations,read_online_store_navigation,write_online_store_navigation,read_products,write_products,read_content,write_content,read_themes,write_themes"
-optional_scopes = [ ]
 use_legacy_install_flow = false
 
 [auth]
 redirect_urls = [
   "https://ironphoenixflow.com/auth/callback",
-  "https://ironphoenixflow.com/auth/shopify/callback",
   "https://ironphoenixflow.com/api/auth/callback"
 ]
+
+[app_proxy]
+# 🛡️ Required for 180-day loyalty cycle tracking
+url = "https://ironphoenixflow.com/api/proxy/shopify"
+prefix = "apps"
+subpath = "phoenix"
