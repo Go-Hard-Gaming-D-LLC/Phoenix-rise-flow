@@ -6,6 +6,10 @@
 
 :root {
     --bg-dark: #050507;
+    --primary: #C397FF;
+    --primary-glow: rgba(195, 151, 255, 0.4);
+    --glass-bg: rgba(13, 13, 17, 0.85);
+    --glass-border: rgba(255, 255, 255, 0.08);
     --glass-bg: rgba(13, 13, 17, 0.75);
     --glass-border: rgba(255, 255, 255, 0.08);
     
@@ -31,19 +35,26 @@ body {
     background-attachment: fixed;
 }
 
+/* FULL-WIDTH LAYOUT OVERRIDES */
+.Polaris-Page {
+    max-width: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
 /* MISSION CONTROL LAYOUT */
 .mission-control-layout { 
     display: grid; 
     grid-template-columns: 340px 1fr; 
-    height: 100vh;
+    min-height: 100vh;
 }
 
 /* SIDEBAR: Store Vitals Section */
 .config-sidebar { 
-    background: rgba(8, 8, 11, 0.9);
+    background: var(--glass-bg);
     backdrop-filter: blur(40px);
-    border-right: 1px solid var(--glass-border); 
-    padding: 32px 24px;
+    border-right: 1px solid var(--glass-border);
+    padding: 40px 24px;
     display: flex;
     flex-direction: column;
     gap: 24px;
@@ -76,7 +87,7 @@ body {
 }
 
 .power-btn {
-    background: linear-gradient(135deg, var(--primary) 0%, #A78BFA 100%);
+    background: var(--primary);
     color: #000;
     font-weight: 900;
     font-size: 0.9rem;
@@ -84,8 +95,8 @@ body {
     border-radius: 14px;
     border: none;
     cursor: pointer;
-    box-shadow: 0 0 20px var(--primary-glow);
-    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 0 25px var(--primary-glow);
+    transition: 0.3s ease;
 }
 
 .power-btn:hover {
